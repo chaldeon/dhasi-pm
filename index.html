@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>dhasi.my.id</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f8f9fa; --card: #ffffff; --border: #e2e8f0;
+    --text: #1e293b; --muted: #64748b; --light: #94a3b8;
+    --accent: #3b82f6; --accent-dark: #2563eb;
+    --success: #22c55e; --warning: #f59e0b; --wip: #e2e8f0;
+    --radius: 12px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* HERO */
+  .hero {
+    background: var(--card); border-bottom: 1px solid var(--border);
+    padding: 64px 24px 48px; text-align: center;
+  }
+  .hero-badge {
+    display: inline-block; background: #eff6ff; color: var(--accent);
+    font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+    padding: 4px 12px; border-radius: 99px; margin-bottom: 20px;
+    border: 1px solid #bfdbfe;
+  }
+  .hero h1 {
+    font-size: clamp(28px, 5vw, 42px); font-weight: 800; letter-spacing: -.02em;
+    color: var(--text); margin-bottom: 12px;
+  }
+  .hero h1 span { color: var(--accent); }
+  .hero p { font-size: 16px; color: var(--muted); max-width: 480px; margin: 0 auto 32px; line-height: 1.7; }
+  .hero-meta {
+    display: flex; justify-content: center; gap: 24px; flex-wrap: wrap;
+    font-size: 13px; color: var(--light);
+  }
+  .hero-meta span { display: flex; align-items: center; gap: 6px; }
+
+  /* MODULES */
+  .section { max-width: 900px; margin: 0 auto; padding: 48px 24px; }
+  .section-header { margin-bottom: 24px; }
+  .section-header h2 { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+  .section-header p { font-size: 13px; color: var(--muted); }
+
+  .module-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+
+  .module-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 24px; text-decoration: none; color: inherit;
+    transition: box-shadow .15s, border-color .15s, transform .15s;
+    display: block; position: relative; overflow: hidden;
+  }
+  .module-card.active:hover {
+    box-shadow: 0 8px 24px rgba(59,130,246,.12);
+    border-color: var(--accent); transform: translateY(-2px);
+  }
+  .module-card.wip { cursor: default; opacity: .7; }
+  .module-card.wip:hover { transform: none; }
+
+  .module-icon {
+    width: 44px; height: 44px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; margin-bottom: 16px;
+  }
+  .module-icon.blue  { background: #eff6ff; }
+  .module-icon.green { background: #f0fdf4; }
+  .module-icon.purple{ background: #faf5ff; }
+  .module-icon.orange{ background: #fff7ed; }
+
+  .module-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+  .module-card p  { font-size: 13px; color: var(--muted); line-height: 1.6; margin-bottom: 16px; }
+
+  .module-footer {
+    display: flex; justify-content: space-between; align-items: center;
+    padding-top: 14px; border-top: 1px solid var(--border);
+  }
+  .status-dot {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em;
+  }
+  .dot { width: 7px; height: 7px; border-radius: 50%; }
+  .dot-live   { background: var(--success); box-shadow: 0 0 0 3px rgba(34,197,94,.2); }
+  .dot-wip    { background: var(--warning); }
+  .dot-planned{ background: var(--light); }
+
+  .module-link {
+    font-size: 12px; color: var(--accent); font-weight: 600;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .module-card.wip .module-link { color: var(--light); }
+
+  /* FOOTER */
+  .footer {
+    border-top: 1px solid var(--border); background: var(--card);
+    padding: 24px; text-align: center;
+    font-size: 12px; color: var(--light);
+  }
+  .footer a { color: var(--accent); text-decoration: none; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-badge">🧪 Personal Dev Sandbox</div>
+  <h1>dhasi<span>.my.id</span></h1>
+  <p>Tempat membangun, menguji, dan mematangkan tools sebelum dipindahkan ke domain produksi.</p>
+  <div class="hero-meta">
+    <span>🏗 Build here</span>
+    <span>→</span>
+    <span>✅ Validate</span>
+    <span>→</span>
+    <span>🚀 Migrate</span>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-header">
+    <h2>Modul</h2>
+    <p>Tools yang sedang dikembangkan di platform ini.</p>
+  </div>
+
+  <div class="module-grid">
+
+    <!-- PROJECT MANAGEMENT — LIVE -->
+    <a href="https://project.dhasi.my.id" class="module-card active">
+      <div class="module-icon blue">📋</div>
+      <h3>Project Management</h3>
+      <p>Alternatif MS Project — WBS, Gantt chart, milestone, dan tracking progress.</p>
+      <div class="module-footer">
+        <div class="status-dot">
+          <div class="dot dot-live"></div>
+          <span style="color:#15803d">Live</span>
+        </div>
+        <div class="module-link">Buka →</div>
+      </div>
+    </a>
+
+    <!-- PLACEHOLDER 2 -->
+    <div class="module-card wip">
+      <div class="module-icon green">💰</div>
+      <h3>Budget Tracker</h3>
+      <p>Tracking pengeluaran dan pemasukan personal dengan kategori dan laporan bulanan.</p>
+      <div class="module-footer">
+        <div class="status-dot">
+          <div class="dot dot-planned"></div>
+          <span style="color:var(--light)">Planned</span>
+        </div>
+        <div class="module-link">Soon</div>
+      </div>
+    </div>
+
+    <!-- PLACEHOLDER 3 -->
+    <div class="module-card wip">
+      <div class="module-icon purple">📝</div>
+      <h3>Notes & Docs</h3>
+      <p>Catatan terstruktur dengan format Markdown dan organisasi per folder.</p>
+      <div class="module-footer">
+        <div class="status-dot">
+          <div class="dot dot-planned"></div>
+          <span style="color:var(--light)">Planned</span>
+        </div>
+        <div class="module-link">Soon</div>
+      </div>
+    </div>
+
+    <!-- PLACEHOLDER 4 -->
+    <div class="module-card wip">
+      <div class="module-icon orange">⏱</div>
+      <h3>Time Tracker</h3>
+      <p>Catat waktu kerja per project dan task, dengan laporan produktivitas harian.</p>
+      <div class="module-footer">
+        <div class="status-dot">
+          <div class="dot dot-planned"></div>
+          <span style="color:var(--light)">Planned</span>
+        </div>
+        <div class="module-link">Soon</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="footer">
+  dhasi.my.id — personal sandbox · dibangun dengan ☕ ·
+  <a href="https://project.dhasi.my.id">project</a>
+</div>
+
+</body>
+</html>
