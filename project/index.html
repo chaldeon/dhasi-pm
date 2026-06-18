@@ -579,7 +579,9 @@ async function renderDashboard() {
     return `<button class="project-card" onclick="openProject('${p.id}')">
       <div class="project-card-top">
         <div><h3>${esc(p.name)}</h3><span class="badge badge-${p.status}">${p.status.replace('_', ' ')}</span></div>
-        <div class="btn btn-ghost btn-icon btn-sm" onclick="event.stopPropagation();openProjModal('${p.id}')">✏️</div>
+        <div class="btn btn-ghost btn-icon btn-sm" onclick="event.stopPropagation();openProjModal('${p.id}')" title="Edit">✏️</div>
+        <div class="btn btn-ghost btn-icon btn-sm" onclick="event.stopPropagation();duplicateProject('${p.id}')" title="Duplicate">📋</div>
+        <div class="btn btn-ghost btn-icon btn-sm" onclick="event.stopPropagation();exportProject('${p.id}')" title="Export">⬇️</div>
       </div>
       <div class="goal-preview">${p.goal ? '🎯 ' + esc(p.goal) : '<em>End goal belum diset</em>'}</div>
       <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
@@ -979,6 +981,41 @@ function scrollToday(smooth = true) {
   el.scrollTo({ left: Math.max(0, 7 * gDW), behavior: smooth ? 'smooth' : 'auto' });
 }
 function zoomG(d) { gDW = Math.max(16, Math.min(56, gDW + d)); renderGantt(); }
+
+// ── DUPLICATE & EXPORT PROJECT ───────────────────────────────────────
+async function duplicateProject(id) {
+  const projects = await DB.getProjects();
+  const p = projects.find(x => x.id === id); if (!p) return;
+  const newP = await DB.createProject({
+    name: p.name + ' (Copy)', goal: p.goal,
+    start_date: p.start_date, end_date: p.end_date, status: 'planning'
+  });
+  if (!newP) return;
+  const [miles, tasks] = await Promise.all([DB.getMilestones(id), DB.getTasks(id)]);
+  const msMap = {};
+  for (const m of miles) {
+    const newM = await DB.createMilestone({ project_id: newP.id, name: m.name, description: m.description, date: m.date, status: 'not_started', order: m.order });
+    if (newM) msMap[m.id] = newM.id;
+  }
+  for (const t of tasks) {
+    await DB.createTask({ project_id: newP.id, milestone_id: t.milestone_id ? msMap[t.milestone_id] || null : null, name: t.name, description: t.description, start_date: t.start_date, end_date: t.end_date, duration_days: t.duration_days, progress_pct: 0, status: 'not_started', assigned_to: t.assigned_to, dependencies_text: t.dependencies_text, order: t.order });
+  }
+  toast('Project diduplikasi!', 'ok');
+  renderDashboard();
+}
+
+async function exportProject(id) {
+  const projects = await DB.getProjects();
+  const p = projects.find(x => x.id === id); if (!p) return;
+  const [miles, tasks] = await Promise.all([DB.getMilestones(id), DB.getTasks(id)]);
+  const data = { projects: [p], milestones: miles, tasks };
+  const b = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(b);
+  a.download = `dhasi-pm-${p.name.replace(/\s+/g,'-')}-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  toast('Project diekspor!', 'ok');
+}
 
 // ── IMPORT LEGACY ─────────────────────────────────────────────────────
 async function handleImport(e) {
