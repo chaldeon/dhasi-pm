@@ -538,7 +538,7 @@ function updateHeader(page) {
   const el = document.getElementById('header-actions');
   const name = currentUser?.user_metadata?.full_name || currentUser?.email || '';
   const initial = name.charAt(0).toUpperCase();
-  el.innerHTML = `<div class="user-chip"><div class="user-avatar">${initial}</div><span>${esc(name.split(' ')[0])}</span></div><button class="btn btn-ghost btn-sm" onclick="signOut()">Keluar</button>`;
+  el.innerHTML = `<div class="user-chip"><div class="user-avatar">${initial}</div><span>${esc(name.split(' ')[0])}</span></div><label class="btn btn-secondary btn-sm" style="cursor:pointer">⬆ Import JSON<input type="file" accept=".json" class="hidden" onchange="handleImport(event)"></label><button class="btn btn-ghost btn-sm" onclick="signOut()">Keluar</button>`;
 }
 
 // ── DASHBOARD ─────────────────────────────────────────────────────────
@@ -972,6 +972,36 @@ function scrollToday(smooth = true) {
 }
 function zoomG(d) { gDW = Math.max(16, Math.min(56, gDW + d)); renderGantt(); }
 
+// ── IMPORT LEGACY ─────────────────────────────────────────────────────
+async function handleImport(e) {
+  const f = e.target.files[0]; if (!f) return;
+  const reader = new FileReader();
+  reader.onload = async ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      toast('Mengimport data...', 'ok');
+      for (const p of data.projects || []) {
+        const newP = await DB.createProject({ name: p.name, goal: p.goal||p.description||'', start_date: p.start_date||null, end_date: p.end_date||null, status: p.status||'planning' });
+        if (!newP) continue;
+        for (const m of (data.milestones||[]).filter(x => x.project_id === p.id)) {
+          const newM = await DB.createMilestone({ project_id: newP.id, name: m.name, description: m.description||'', date: m.date||null, status: m.status||'not_started', order: m.order||0 });
+          if (!newM) continue;
+          for (const t of (data.tasks||[]).filter(x => x.milestone_id === m.id)) {
+            await DB.createTask({ project_id: newP.id, milestone_id: newM.id, name: t.name, description: t.description||'', start_date: t.start_date||null, end_date: t.end_date||null, duration_days: t.duration_days||0, progress_pct: t.progress_pct||0, status: t.status||'not_started', assigned_to: t.assigned_to||'', dependencies_text: t.dependencies_text||'', order: t.order||0 });
+          }
+        }
+        for (const t of (data.tasks||[]).filter(x => x.project_id === p.id && !x.milestone_id)) {
+          await DB.createTask({ project_id: newP.id, milestone_id: null, name: t.name, description: t.description||'', start_date: t.start_date||null, end_date: t.end_date||null, duration_days: t.duration_days||0, progress_pct: t.progress_pct||0, status: t.status||'not_started', assigned_to: t.assigned_to||'', dependencies_text: t.dependencies_text||'', order: t.order||0 });
+        }
+      }
+      toast('Import selesai!', 'ok');
+      renderDashboard();
+    } catch(err) { toast('Gagal import: ' + err.message, 'err'); }
+  };
+  reader.readAsText(f);
+  e.target.value = '';
+}
+  
 // ── TOAST ─────────────────────────────────────────────────────────────
 function toast(msg, type = '') {
   const el = document.createElement('div'); el.className = 'toast' + (type ? ' ' + type : ''); el.textContent = msg;
