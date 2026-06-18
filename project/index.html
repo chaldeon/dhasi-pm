@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>dhasi PM</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#f8f9fa;--card:#ffffff;--hover:#f0f4f8;
+  --border:#e2e8f0;--border-dark:#cbd5e1;
+  --text:#1e293b;--muted:#64748b;--light:#94a3b8;
+  --accent:#3b82f6;--accent-dark:#2563eb;--accent-bg:#eff6ff;
+  --success:#22c55e;--warning:#f59e0b;--danger:#ef4444;--milestone:#8b5cf6;
+  --shadow-sm:0 1px 3px rgba(0,0,0,.08);--shadow:0 4px 12px rgba(0,0,0,.10);
+  --radius:8px;--radius-lg:12px;
+  --font:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+}
+body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14px;line-height:1.6;min-height:100vh;}
+
+/* HEADER */
+.app-header{background:var(--card);border-bottom:1px solid var(--border);padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:var(--shadow-sm);}
+.logo{font-weight:700;font-size:15px;color:var(--text);cursor:pointer;}
+.logo span{color:var(--accent);}
+.header-actions{display:flex;gap:8px;align-items:center;}
+.user-chip{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);}
+.user-avatar{width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;}
+
+/* LAYOUT */
+.container{max-width:900px;margin:0 auto;padding:24px;}
+.page{display:none;}
+.page.active{display:block;}
+
+/* LOGIN PAGE */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);}
+.login-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:48px 40px;width:400px;max-width:calc(100vw - 32px);text-align:center;box-shadow:var(--shadow);}
+.login-logo{font-size:28px;font-weight:800;margin-bottom:8px;}
+.login-logo span{color:var(--accent);}
+.login-desc{color:var(--muted);font-size:13px;margin-bottom:32px;line-height:1.6;}
+.btn-google{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:12px;border:1px solid var(--border-dark);border-radius:var(--radius);background:var(--card);cursor:pointer;font-size:14px;font-weight:500;transition:all .15s;font-family:var(--font);}
+.btn-google:hover{background:var(--hover);border-color:var(--accent);}
+.google-icon{width:18px;height:18px;}
+.login-note{font-size:11px;color:var(--light);margin-top:16px;}
+
+/* LOADING */
+.loading-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;}
+.spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--radius);font-size:13px;font-weight:500;cursor:pointer;border:1px solid transparent;transition:all .15s;white-space:nowrap;font-family:var(--font);}
+.btn-primary{background:var(--accent);color:#fff;border-color:var(--accent);}
+.btn-primary:hover{background:var(--accent-dark);}
+.btn-secondary{background:var(--card);color:var(--text);border-color:var(--border-dark);}
+.btn-secondary:hover{background:var(--hover);}
+.btn-ghost{background:transparent;color:var(--muted);border-color:transparent;}
+.btn-ghost:hover{background:var(--hover);color:var(--text);}
+.btn-sm{padding:4px 10px;font-size:12px;}
+.btn-icon{padding:6px 8px;}
+.btn-link{background:none;border:none;color:var(--accent);font-size:13px;cursor:pointer;padding:4px;font-family:var(--font);}
+.btn-link:hover{text-decoration:underline;}
+
+/* FORMS */
+.form-group{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
+.form-group label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;display:flex;align-items:center;gap:5px;}
+input[type="text"],input[type="date"],input[type="number"],select,textarea{border:1px solid var(--border-dark);border-radius:var(--radius);padding:8px 11px;font-size:14px;font-family:var(--font);color:var(--text);background:var(--card);width:100%;transition:border-color .15s;}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(59,130,246,.12);}
+textarea{resize:vertical;min-height:72px;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+
+/* TOOLTIP */
+.tip{position:relative;display:inline-flex;align-items:center;}
+.tip-icon{width:15px;height:15px;border-radius:50%;background:var(--border-dark);color:var(--muted);font-size:9px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;cursor:help;flex-shrink:0;}
+.tip:hover .tip-box{opacity:1;pointer-events:all;transform:translateY(0);}
+.tip-box{position:absolute;left:20px;top:-4px;background:#1e293b;color:#fff;font-size:11px;padding:7px 10px;border-radius:6px;width:210px;line-height:1.5;opacity:0;pointer-events:none;transform:translateY(4px);transition:all .15s;z-index:50;font-weight:400;text-transform:none;letter-spacing:0;}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;z-index:200;opacity:0;pointer-events:none;transition:opacity .15s;}
+.modal-overlay.open{opacity:1;pointer-events:all;}
+.modal{background:var(--card);border-radius:var(--radius-lg);padding:28px;width:520px;max-width:calc(100vw - 32px);max-height:90vh;overflow-y:auto;box-shadow:var(--shadow);transform:translateY(8px);transition:transform .15s;}
+.modal-overlay.open .modal{transform:translateY(0);}
+.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;}
+.modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;}
+
+/* WIZARD */
+.wizard-steps{display:flex;margin-bottom:28px;}
+.wizard-step{flex:1;text-align:center;position:relative;}
+.wizard-step::after{content:'';position:absolute;top:14px;left:50%;width:100%;height:2px;background:var(--border);z-index:0;}
+.wizard-step:last-child::after{display:none;}
+.step-circle{width:28px;height:28px;border-radius:50%;background:var(--border);color:var(--muted);font-size:12px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;position:relative;z-index:1;transition:all .2s;}
+.step-label{font-size:11px;color:var(--muted);margin-top:5px;}
+.wizard-step.active .step-circle{background:var(--accent);color:#fff;}
+.wizard-step.done .step-circle{background:var(--success);color:#fff;}
+.wizard-step.active .step-label,.wizard-step.done .step-label{color:var(--text);font-weight:600;}
+.wizard-body{min-height:200px;}
+.wizard-nav{display:flex;justify-content:space-between;margin-top:20px;padding-top:16px;border-top:1px solid var(--border);}
+
+/* BADGES */
+.badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.03em;}
+.badge-planning{background:#f1f5f9;color:var(--muted);}
+.badge-active{background:#dbeafe;color:#1d4ed8;}
+.badge-on_hold{background:#fef3c7;color:#92400e;}
+.badge-completed{background:#dcfce7;color:#15803d;}
+.badge-not_started{background:#f1f5f9;color:var(--muted);}
+.badge-in_progress{background:#dbeafe;color:#1d4ed8;}
+
+/* PROGRESS */
+.progress-bar{height:6px;background:var(--border);border-radius:99px;overflow:hidden;}
+.progress-fill{height:100%;background:var(--accent);border-radius:99px;transition:width .3s;}
+
+/* TOAST */
+#toasts{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:8px;z-index:300;}
+.toast{background:var(--text);color:#fff;padding:10px 16px;border-radius:var(--radius);font-size:13px;box-shadow:var(--shadow);opacity:0;transform:translateX(8px);transition:all .2s;}
+.toast.show{opacity:1;transform:translateX(0);}
+.toast.ok{background:#15803d;}
+.toast.err{background:var(--danger);}
+
+/* EMPTY */
+.empty{text-align:center;padding:36px 24px;color:var(--muted);}
+.empty-icon{font-size:36px;margin-bottom:10px;}
+.empty h3{color:var(--text);margin-bottom:6px;}
+
+/* DASHBOARD */
+.page-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+.stats-row{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;}
+.stat-chip{background:var(--card);border:1px solid var(--border);border-radius:99px;padding:5px 14px;font-size:12px;font-weight:500;color:var(--muted);}
+.stat-chip b{color:var(--text);}
+.project-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;}
+.project-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px;cursor:pointer;transition:box-shadow .15s,border-color .15s;text-align:left;width:100%;}
+.project-card:hover{box-shadow:var(--shadow);border-color:var(--accent);}
+.project-card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;}
+.project-card h3{font-size:14px;font-weight:700;margin-bottom:3px;}
+.goal-preview{font-size:12px;color:var(--muted);margin-bottom:12px;min-height:18px;font-style:italic;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.project-meta{display:flex;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);}
+
+/* PROJECT DETAIL */
+.proj-header{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px 24px;margin-bottom:16px;box-shadow:var(--shadow-sm);}
+.proj-header-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px;}
+.proj-title{font-size:20px;font-weight:800;margin-bottom:4px;}
+.end-goal-block{background:var(--accent-bg);border:1px solid #bfdbfe;border-radius:var(--radius);padding:10px 14px;margin:10px 0;font-size:13px;}
+.end-goal-block .eg-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);margin-bottom:2px;}
+.end-goal-block .eg-text{color:#1d4ed8;}
+.proj-meta-row{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted);align-items:center;margin-top:8px;}
+.proj-actions{display:flex;gap:6px;flex-shrink:0;}
+.summary-row{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
+.summary-chip{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:8px 14px;}
+.summary-chip .lbl{font-size:10px;color:var(--muted);display:block;text-transform:uppercase;letter-spacing:.04em;}
+.summary-chip .val{font-weight:700;font-size:17px;}
+.summary-chip.warn{border-color:var(--warning);}
+.summary-chip.warn .lbl{color:var(--warning);}
+.summary-chip.warn .val{color:var(--warning);}
+
+/* SECTION */
+.sec-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.sec-title{font-size:14px;font-weight:700;display:flex;align-items:center;gap:6px;}
+
+/* MILESTONE */
+.ms-block{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:12px;overflow:hidden;box-shadow:var(--shadow-sm);}
+.ms-hdr{padding:12px 16px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);background:linear-gradient(to right,#faf5ff,#fff);}
+.ms-name{font-weight:700;font-size:13px;flex:1;}
+.ms-meta{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted);}
+.ms-actions{display:flex;gap:2px;margin-left:6px;}
+.ms-progress{height:3px;background:var(--border);}
+.ms-progress-fill{height:100%;background:var(--milestone);transition:width .3s;}
+
+/* TASKS */
+.task-list{padding:4px 0;}
+.task-item{display:flex;align-items:center;gap:8px;padding:8px 16px;border-bottom:1px solid var(--border);transition:background .1s;}
+.task-item:last-child{border-bottom:none;}
+.task-item:hover{background:var(--hover);}
+.task-check{width:17px;height:17px;border-radius:4px;border:2px solid var(--border-dark);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;font-size:10px;}
+.task-check.done{background:var(--success);border-color:var(--success);color:#fff;}
+.task-main{flex:1;min-width:0;}
+.task-name-text{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.task-name-text.done{text-decoration:line-through;color:var(--muted);}
+.task-sub{display:flex;gap:10px;margin-top:2px;flex-wrap:wrap;}
+.task-sub-item{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:3px;}
+.task-sub-item.warn{color:var(--warning);}
+.task-right{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.prog-pill{font-size:11px;color:var(--muted);min-width:32px;text-align:right;}
+.prog-mini{width:44px;height:4px;background:var(--border);border-radius:99px;overflow:hidden;}
+.prog-mini-fill{height:100%;background:var(--accent);border-radius:99px;}
+.prog-mini-fill.done{background:var(--success);}
+.task-act{display:flex;gap:2px;opacity:0;transition:opacity .1s;}
+.task-item:hover .task-act{opacity:1;}
+.add-task-row{padding:7px 16px;border-top:1px solid var(--border);}
+
+/* UNASSIGNED */
+.unassigned-sec{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:12px;overflow:hidden;box-shadow:var(--shadow-sm);}
+.unassigned-hdr{padding:10px 16px;display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;}
+.unassigned-hdr:hover{background:var(--hover);}
+.unassigned-title{font-size:13px;font-weight:600;color:var(--muted);flex:1;}
+.collapse-ico{font-size:11px;color:var(--light);transition:transform .2s;}
+.collapsed .collapse-ico{transform:rotate(-90deg);}
+
+/* UTILS */
+.flex{display:flex;}.gap-6{gap:6px;}.gap-8{gap:8px;}.mt-12{margin-top:12px;}.hidden{display:none!important;}
+@media(max-width:640px){.container{padding:16px;}.app-header{padding:0 16px;}.form-row{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div id="app-loading" class="loading-wrap"><div class="spinner"></div></div>
+
+<!-- LOGIN -->
+<div id="app-login" class="login-wrap" style="display:none">
+  <div class="login-card">
+    <div class="login-logo">dhasi <span>PM</span></div>
+    <div class="login-desc">Project management tool personal.<br>Masuk dengan akun Google kamu untuk mulai.</div>
+    <button class="btn-google" onclick="signInGoogle()">
+      <svg class="google-icon" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      Masuk dengan Google
+    </button>
+    <div class="login-note">Hanya akun yang diizinkan yang bisa mengakses platform ini.</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app-main" style="display:none">
+  <header class="app-header">
+    <div class="logo" onclick="location.href='/'">dhasi <span>PM</span></div>
+    <div class="header-actions" id="header-actions"></div>
+  </header>
+
+  <div class="container">
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-bar">
+        <h1>Projects</h1>
+        <button class="btn btn-primary" onclick="startWizard()">+ New Project</button>
+      </div>
+      <div class="stats-row" id="dash-stats"></div>
+      <div class="project-grid" id="proj-grid"></div>
+    </div>
+
+    <!-- PROJECT DETAIL -->
+    <div class="page" id="page-project">
+      <div class="proj-header">
+        <div class="proj-header-top">
+          <div style="flex:1;min-width:0">
+            <div class="proj-title" id="det-name">—</div>
+            <span class="badge" id="det-badge"></span>
+          </div>
+          <div class="proj-actions">
+            <button class="btn btn-secondary btn-sm" onclick="openProjModal(currentProjectId)">✏️ Edit</button>
+            <button class="btn btn-secondary btn-sm" onclick="showPage('gantt')">📊 Gantt</button>
+            <button class="btn btn-ghost btn-sm" onclick="deleteProject()">🗑</button>
+          </div>
+        </div>
+        <div class="end-goal-block" id="det-goal-block">
+          <div class="eg-label">🎯 End Goal</div>
+          <div class="eg-text" id="det-goal">—</div>
+        </div>
+        <div class="proj-meta-row">
+          <span id="det-dates"></span>
+          <span id="det-pct" style="font-weight:600;color:var(--accent)"></span>
+        </div>
+        <div class="progress-bar mt-12" style="height:7px">
+          <div class="progress-fill" id="det-bar" style="width:0%"></div>
+        </div>
+      </div>
+      <div class="summary-row" id="det-summary"></div>
+      <div class="sec-header">
+        <div class="sec-title">🏁 Milestones
+          <div class="tip"><div class="tip-icon">i</div><div class="tip-box">Tonggak penting menuju end goal. Setiap milestone berisi tasks yang harus diselesaikan.</div></div>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="openMsModal()">+ Add Milestone</button>
+      </div>
+      <div id="ms-container"></div>
+      <div class="unassigned-sec" id="unassigned-sec">
+        <div class="unassigned-hdr" onclick="toggleUnassigned()">
+          <span>📋</span>
+          <span class="unassigned-title">Tasks tanpa Milestone <span id="unassigned-count"></span></span>
+          <div class="tip"><div class="tip-icon">i</div><div class="tip-box">Tasks yang belum dikelompokkan ke milestone manapun.</div></div>
+          <span class="collapse-ico">▾</span>
+        </div>
+        <div id="unassigned-body">
+          <div class="task-list" id="unassigned-tasks"></div>
+          <div class="add-task-row"><button class="btn-link" onclick="openTaskModal(null,null)">+ Add Task</button></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GANTT -->
+    <div class="page" id="page-gantt">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+        <div><h2 id="gantt-title"></h2><p id="gantt-sub" style="font-size:12px;color:var(--muted);margin-top:2px"></p></div>
+        <div class="flex gap-8">
+          <div class="flex gap-6">
+            <button class="btn btn-secondary btn-sm" onclick="zoomG(-4)">🔍−</button>
+            <button class="btn btn-secondary btn-sm" onclick="zoomG(4)">🔍+</button>
+            <button class="btn btn-secondary btn-sm" onclick="scrollToday()">Today</button>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="showPage('project')">← Kembali</button>
+        </div>
+      </div>
+      <div id="gantt-container"></div>
+    </div>
+  </div>
+</div>
+
+<!-- WIZARD -->
+<div class="modal-overlay" id="wiz-overlay">
+  <div class="modal" style="width:540px">
+    <div class="wizard-steps" id="wiz-steps">
+      <div class="wizard-step active" id="ws-0"><div class="step-circle">1</div><div class="step-label">Project</div></div>
+      <div class="wizard-step" id="ws-1"><div class="step-circle">2</div><div class="step-label">Milestones</div></div>
+      <div class="wizard-step" id="ws-2"><div class="step-circle">3</div><div class="step-label">Siap!</div></div>
+    </div>
+    <div class="wizard-body" id="wiz-body"></div>
+    <div class="wizard-nav">
+      <button class="btn btn-ghost" id="wiz-back" onclick="wizBack()">← Back</button>
+      <button class="btn btn-primary" id="wiz-next" onclick="wizNext()">Lanjut →</button>
+    </div>
+  </div>
+</div>
+
+<!-- PROJECT MODAL -->
+<div class="modal-overlay" id="proj-overlay" onclick="if(event.target===this)closeProjModal()">
+  <div class="modal">
+    <div class="modal-header"><h2 id="proj-modal-title">Edit Project</h2><button class="btn btn-ghost btn-icon" onclick="closeProjModal()">✕</button></div>
+    <div class="form-group"><label>Nama Project *</label><input type="text" id="pf-name"></div>
+    <div class="form-group">
+      <label>End Goal <div class="tip"><div class="tip-icon">i</div><div class="tip-box">Output akhir yang ingin dicapai dari project ini.</div></div></label>
+      <textarea id="pf-goal" placeholder="Contoh: Meluncurkan website company profile sebelum Q3 2026"></textarea>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Tanggal Mulai</label><input type="date" id="pf-start"></div>
+      <div class="form-group"><label>Deadline</label><input type="date" id="pf-end"></div>
+    </div>
+    <div class="form-group"><label>Status</label>
+      <select id="pf-status"><option value="planning">Planning</option><option value="active">Active</option><option value="on_hold">On Hold</option><option value="completed">Completed</option></select>
+    </div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeProjModal()">Batal</button><button class="btn btn-primary" onclick="saveProjModal()">Simpan</button></div>
+  </div>
+</div>
+
+<!-- MILESTONE MODAL -->
+<div class="modal-overlay" id="ms-overlay" onclick="if(event.target===this)closeMsModal()">
+  <div class="modal">
+    <div class="modal-header"><h2 id="ms-modal-title">New Milestone</h2><button class="btn btn-ghost btn-icon" onclick="closeMsModal()">✕</button></div>
+    <div class="form-group"><label>Nama Milestone *</label><input type="text" id="mf-name" placeholder="Contoh: MVP selesai"></div>
+    <div class="form-group"><label>Deskripsi</label><textarea id="mf-desc" placeholder="(opsional)"></textarea></div>
+    <div class="form-group"><label>Target Tanggal</label><input type="date" id="mf-date"></div>
+    <div class="form-group"><label>Status</label>
+      <select id="mf-status"><option value="not_started">Not Started</option><option value="in_progress">In Progress</option><option value="completed">Completed</option><option value="on_hold">On Hold</option></select>
+    </div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeMsModal()">Batal</button><button class="btn btn-primary" onclick="saveMsModal()">Simpan</button></div>
+  </div>
+</div>
+
+<!-- TASK MODAL -->
+<div class="modal-overlay" id="task-overlay" onclick="if(event.target===this)closeTaskModal()">
+  <div class="modal">
+    <div class="modal-header"><h2 id="task-modal-title">New Task</h2><button class="btn btn-ghost btn-icon" onclick="closeTaskModal()">✕</button></div>
+    <div class="form-group"><label>Nama Task *</label><input type="text" id="tf-name"></div>
+    <div class="form-group"><label>Deskripsi</label><textarea id="tf-desc" placeholder="(opsional)"></textarea></div>
+    <div class="form-row">
+      <div class="form-group"><label>Tanggal Mulai</label><input type="date" id="tf-start"></div>
+      <div class="form-group"><label>Tanggal Selesai</label><input type="date" id="tf-end"></div>
+    </div>
+    <div class="form-group">
+      <label>Assigned To <div class="tip"><div class="tip-icon">i</div><div class="tip-box">Siapa yang bertanggung jawab? Kosongkan jika belum ada (muncul peringatan ⚠️).</div></div></label>
+      <input type="text" id="tf-assign" placeholder="Contoh: Budi, Tim Marketing">
+    </div>
+    <div class="form-group">
+      <label>Dependencies <div class="tip"><div class="tip-icon">i</div><div class="tip-box">Task mana yang harus selesai dulu sebelum task ini dimulai (sequence)?</div></div></label>
+      <input type="text" id="tf-deps" placeholder="Contoh: Design mockup, API setup">
+    </div>
+    <div class="form-group"><label>Status</label>
+      <select id="tf-status"><option value="not_started">Not Started</option><option value="in_progress">In Progress</option><option value="completed">Completed</option><option value="on_hold">On Hold</option></select>
+    </div>
+    <div class="form-group">
+      <label>Progress (%) <div class="tip"><div class="tip-icon">i</div><div class="tip-box">Estimasi persentase penyelesaian task ini (0–100%).</div></div></label>
+      <input type="number" id="tf-prog" min="0" max="100" value="0">
+    </div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeTaskModal()">Batal</button><button class="btn btn-primary" onclick="saveTaskModal()">Simpan</button></div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<script>
+// ── SUPABASE INIT ─────────────────────────────────────────────────────
+const SUPA_URL = 'https://bnpqmdeutwnwmfxnqzyt.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJucHFtZGV1dHdud21meG5xenl0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3Mzg5NzIsImV4cCI6MjA5NzMxNDk3Mn0.lccgDePQ5eFffJGvwLifUMQNKl31vfwoHQZ5y1Q1JT0';
+const ALLOWED_EMAILS = ['danielsidabutar.11@gmail.com'];
+
+const { createClient } = supabase;
+const sb = createClient(SUPA_URL, SUPA_KEY);
+
+let currentUser = null;
+let currentProjectId = null;
+let gDW = 28;
+
+// ── AUTH ──────────────────────────────────────────────────────────────
+async function signInGoogle() {
+  const { error } = await sb.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: 'https://dhasi.my.id/project' }
+  });
+  if (error) toast('Login gagal: ' + error.message, 'err');
+}
+
+async function signOut() {
+  await sb.auth.signOut();
+  location.reload();
+}
+
+async function initAuth() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session?.user) {
+    const email = session.user.email;
+    if (!ALLOWED_EMAILS.includes(email)) {
+      await sb.auth.signOut();
+      showLogin('Akun ini tidak diizinkan mengakses platform ini.');
+      return;
+    }
+    currentUser = session.user;
+    showApp();
+  } else {
+    showLogin();
+  }
+
+  sb.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_IN' && session?.user) {
+      const email = session.user.email;
+      if (!ALLOWED_EMAILS.includes(email)) {
+        await sb.auth.signOut();
+        showLogin('Akun ini tidak diizinkan.');
+        return;
+      }
+      currentUser = session.user;
+      showApp();
+    } else if (event === 'SIGNED_OUT') {
+      currentUser = null;
+      showLogin();
+    }
+  });
+}
+
+function showLogin(msg) {
+  document.getElementById('app-loading').style.display = 'none';
+  document.getElementById('app-main').style.display = 'none';
+  document.getElementById('app-login').style.display = 'flex';
+  if (msg) toast(msg, 'err');
+}
+
+function showApp() {
+  document.getElementById('app-loading').style.display = 'none';
+  document.getElementById('app-login').style.display = 'none';
+  document.getElementById('app-main').style.display = 'block';
+  renderDashboard();
+  updateHeader('dashboard');
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────────
+function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function uid() { return crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36)+Math.random().toString(36).slice(2); }
+
+async function dbQuery(fn) {
+  try { return await fn(); }
+  catch(e) { toast('Error: ' + e.message, 'err'); return null; }
+}
+
+// ── DATA LAYER ────────────────────────────────────────────────────────
+const DB = {
+  async getProjects() {
+    const { data, error } = await sb.from('projects').select('*').order('created_at', { ascending: false });
+    if (error) { toast('Gagal load projects', 'err'); return []; }
+    return data || [];
+  },
+  async createProject(d) {
+    const { data, error } = await sb.from('projects').insert({ ...d, user_id: currentUser.id }).select().single();
+    if (error) { toast('Gagal buat project', 'err'); return null; }
+    return data;
+  },
+  async updateProject(id, d) {
+    const { error } = await sb.from('projects').update({ ...d, updated_at: new Date().toISOString() }).eq('id', id).eq('user_id', currentUser.id);
+    if (error) toast('Gagal update project', 'err');
+  },
+  async deleteProject(id) {
+    const { error } = await sb.from('projects').delete().eq('id', id).eq('user_id', currentUser.id);
+    if (error) toast('Gagal hapus project', 'err');
+  },
+  async getMilestones(projectId) {
+    const { data, error } = await sb.from('milestones').select('*').eq('project_id', projectId).order('order', { ascending: true });
+    if (error) { toast('Gagal load milestones', 'err'); return []; }
+    return data || [];
+  },
+  async createMilestone(d) {
+    const { data, error } = await sb.from('milestones').insert({ ...d, user_id: currentUser.id }).select().single();
+    if (error) { toast('Gagal buat milestone', 'err'); return null; }
+    return data;
+  },
+  async updateMilestone(id, d) {
+    const { error } = await sb.from('milestones').update(d).eq('id', id).eq('user_id', currentUser.id);
+    if (error) toast('Gagal update milestone', 'err');
+  },
+  async deleteMilestone(id) {
+    await sb.from('tasks').update({ milestone_id: null }).eq('milestone_id', id).eq('user_id', currentUser.id);
+    const { error } = await sb.from('milestones').delete().eq('id', id).eq('user_id', currentUser.id);
+    if (error) toast('Gagal hapus milestone', 'err');
+  },
+  async getTasks(projectId) {
+    const { data, error } = await sb.from('tasks').select('*').eq('project_id', projectId).order('order', { ascending: true });
+    if (error) { toast('Gagal load tasks', 'err'); return []; }
+    return data || [];
+  },
+  async createTask(d) {
+    const { data, error } = await sb.from('tasks').insert({ ...d, user_id: currentUser.id }).select().single();
+    if (error) { toast('Gagal buat task', 'err'); return null; }
+    return data;
+  },
+  async updateTask(id, d) {
+    const { error } = await sb.from('tasks').update(d).eq('id', id).eq('user_id', currentUser.id);
+    if (error) toast('Gagal update task', 'err');
+  },
+  async deleteTask(id) {
+    const { error } = await sb.from('tasks').delete().eq('id', id).eq('user_id', currentUser.id);
+    if (error) toast('Gagal hapus task', 'err');
+  }
+};
+
+// ── NAVIGATION ────────────────────────────────────────────────────────
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  updateHeader(name);
+  if (name === 'dashboard') renderDashboard();
+  if (name === 'project' && currentProjectId) renderProject();
+  if (name === 'gantt' && currentProjectId) renderGantt();
+}
+
+function updateHeader(page) {
+  const el = document.getElementById('header-actions');
+  const name = currentUser?.user_metadata?.full_name || currentUser?.email || '';
+  const initial = name.charAt(0).toUpperCase();
+  el.innerHTML = `<div class="user-chip"><div class="user-avatar">${initial}</div><span>${esc(name.split(' ')[0])}</span></div><button class="btn btn-ghost btn-sm" onclick="signOut()">Keluar</button>`;
+}
+
+// ── DASHBOARD ─────────────────────────────────────────────────────────
+async function renderDashboard() {
+  const projects = await DB.getProjects();
+  const byS = { planning: 0, active: 0, on_hold: 0, completed: 0 };
+  projects.forEach(p => { if (byS[p.status] !== undefined) byS[p.status]++; });
+  document.getElementById('dash-stats').innerHTML = `
+    <div class="stat-chip"><b>${projects.length}</b> Total</div>
+    <div class="stat-chip"><b>${byS.active}</b> Active</div>
+    <div class="stat-chip"><b>${byS.planning}</b> Planning</div>
+    <div class="stat-chip"><b>${byS.completed}</b> Completed</div>`;
+  const grid = document.getElementById('proj-grid');
+  if (!projects.length) {
+    grid.innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="empty-icon">📋</div><h3>Belum ada project</h3><p style="margin-bottom:12px">Klik "+ New Project" untuk mulai.</p></div>';
+    return;
+  }
+  // Load task counts per project
+  const taskCounts = {};
+  await Promise.all(projects.map(async p => {
+    const tasks = await DB.getTasks(p.id);
+    const miles = await DB.getMilestones(p.id);
+    taskCounts[p.id] = { tasks, miles };
+  }));
+  grid.innerHTML = projects.map(p => {
+    const { tasks, miles } = taskCounts[p.id];
+    const done = tasks.filter(t => t.status === 'completed').length;
+    const pct = tasks.length ? Math.round(done / tasks.length * 100) : 0;
+    const mileDone = miles.filter(m => m.status === 'completed').length;
+    return `<button class="project-card" onclick="openProject('${p.id}')">
+      <div class="project-card-top">
+        <div><h3>${esc(p.name)}</h3><span class="badge badge-${p.status}">${p.status.replace('_', ' ')}</span></div>
+        <button class="btn btn-ghost btn-icon btn-sm" onclick="event.stopPropagation();openProjModal('${p.id}')">✏️</button>
+      </div>
+      <div class="goal-preview">${p.goal ? '🎯 ' + esc(p.goal) : '<em>End goal belum diset</em>'}</div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+      <div class="project-meta">
+        <span>${p.end_date ? '📅 ' + p.end_date : '📅 —'}</span>
+        <span>🏁 ${mileDone}/${miles.length} · ✅ ${done}/${tasks.length}</span>
+      </div>
+    </button>`;
+  }).join('');
+}
+
+async function openProject(id) {
+  currentProjectId = id;
+  showPage('project');
+}
+
+// ── PROJECT DETAIL ────────────────────────────────────────────────────
+async function renderProject() {
+  const projects = await DB.getProjects();
+  const p = projects.find(x => x.id === currentProjectId);
+  if (!p) { showPage('dashboard'); return; }
+  document.title = 'dhasi PM — ' + p.name;
+  document.getElementById('det-name').textContent = p.name;
+  document.getElementById('det-goal').textContent = p.goal || 'Belum diset';
+  document.getElementById('det-goal-block').style.opacity = p.goal ? '1' : '.6';
+  const b = document.getElementById('det-badge');
+  b.textContent = p.status.replace('_', ' '); b.className = 'badge badge-' + p.status;
+  document.getElementById('det-dates').textContent = p.start_date ? '📅 ' + p.start_date + (p.end_date ? ' → ' + p.end_date : '') : '📅 Tanggal belum diset';
+  const [allTasks, miles] = await Promise.all([DB.getTasks(currentProjectId), DB.getMilestones(currentProjectId)]);
+  const done = allTasks.filter(t => t.status === 'completed').length;
+  const pct = allTasks.length ? Math.round(done / allTasks.length * 100) : 0;
+  document.getElementById('det-bar').style.width = pct + '%';
+  document.getElementById('det-pct').textContent = pct + '% selesai';
+  const mileDone = miles.filter(m => m.status === 'completed').length;
+  const noAssignee = allTasks.filter(t => !t.assigned_to);
+  let summaryHTML = `
+    <div class="summary-chip"><span class="lbl">Tasks</span><span class="val">${allTasks.length}</span></div>
+    <div class="summary-chip"><span class="lbl">Selesai</span><span class="val">${done}</span></div>
+    <div class="summary-chip"><span class="lbl">Milestones</span><span class="val">${mileDone}/${miles.length}</span></div>`;
+  if (noAssignee.length) summaryHTML += `<div class="summary-chip warn"><span class="lbl">⚠️ Unassigned</span><span class="val">${noAssignee.length}</span></div>`;
+  document.getElementById('det-summary').innerHTML = summaryHTML;
+  renderMilestones(miles, allTasks);
+  renderUnassigned(allTasks);
+}
+
+function renderMilestones(miles, allTasks) {
+  const container = document.getElementById('ms-container');
+  if (!miles.length) {
+    container.innerHTML = `<div class="empty" style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:12px">
+      <div class="empty-icon">🏁</div><h3>Belum ada milestone</h3>
+      <p style="margin-bottom:12px">Tentukan tonggak-tonggak penting menuju end goal.</p>
+      <button class="btn btn-primary btn-sm" onclick="openMsModal()">+ Add Milestone</button>
+    </div>`;
+    return;
+  }
+  container.innerHTML = miles.map(m => {
+    const tasks = allTasks.filter(t => t.milestone_id === m.id);
+    const done = tasks.filter(t => t.status === 'completed').length;
+    const pct = tasks.length ? Math.round(done / tasks.length * 100) : 0;
+    const sc = m.status === 'completed' ? 'var(--success)' : m.status === 'in_progress' ? 'var(--accent)' : m.status === 'on_hold' ? 'var(--warning)' : 'var(--light)';
+    return `<div class="ms-block">
+      <div class="ms-hdr">
+        <span style="font-size:16px">🏁</span>
+        <div style="flex:1;min-width:0">
+          <div class="ms-name">${esc(m.name)}</div>
+          ${m.description ? `<div style="font-size:11px;color:var(--muted)">${esc(m.description)}</div>` : ''}
+        </div>
+        <div class="ms-meta">
+          ${m.date ? `<span>📅 ${m.date}</span>` : ''}
+          <span style="color:${sc};font-weight:600">${m.status.replace('_', ' ')}</span>
+          <span>${done}/${tasks.length}</span>
+        </div>
+        <div class="ms-actions">
+          <button class="btn btn-ghost btn-icon btn-sm" onclick="openMsModal('${m.id}')">✏️</button>
+          <button class="btn btn-ghost btn-icon btn-sm" onclick="delMs('${m.id}')">🗑</button>
+        </div>
+      </div>
+      <div class="ms-progress"><div class="ms-progress-fill" style="width:${pct}%"></div></div>
+      ${tasks.length ? `<div class="task-list">${tasks.map(t => taskHTML(t)).join('')}</div>` : ''}
+      <div class="add-task-row"><button class="btn-link" onclick="openTaskModal('${m.id}',null)">+ Add Task</button></div>
+    </div>`;
+  }).join('');
+}
+
+function renderUnassigned(allTasks) {
+  const tasks = allTasks.filter(t => !t.milestone_id);
+  document.getElementById('unassigned-count').textContent = tasks.length ? `(${tasks.length})` : '';
+  document.getElementById('unassigned-tasks').innerHTML = tasks.map(t => taskHTML(t)).join('');
+}
+
+function taskHTML(t) {
+  const done = t.status === 'completed';
+  return `<div class="task-item" data-id="${t.id}">
+    <div class="task-check ${done ? 'done' : ''}" onclick="toggleDone('${t.id}')">${done ? '✓' : ''}</div>
+    <div class="task-main">
+      <div class="task-name-text ${done ? 'done' : ''}">${esc(t.name)}</div>
+      <div class="task-sub">
+        ${t.assigned_to ? `<span class="task-sub-item">👤 ${esc(t.assigned_to)}</span>` : `<span class="task-sub-item warn">⚠️ Belum ada assignee</span>`}
+        ${t.dependencies_text ? `<span class="task-sub-item">🔗 ${esc(t.dependencies_text)}</span>` : ''}
+        ${t.start_date ? `<span class="task-sub-item">📅 ${t.start_date}${t.end_date ? ' → ' + t.end_date : ''}</span>` : ''}
+      </div>
+    </div>
+    <div class="task-right">
+      <div class="prog-mini"><div class="prog-mini-fill ${done ? 'done' : ''}" style="width:${t.progress_pct}%"></div></div>
+      <div class="prog-pill">${t.progress_pct}%</div>
+      <div class="task-act">
+        <button class="btn btn-ghost btn-icon btn-sm" onclick="openTaskModal(null,'${t.id}')">✏️</button>
+        <button class="btn btn-ghost btn-icon btn-sm" onclick="delTask('${t.id}')">🗑</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+async function toggleDone(id) {
+  const tasks = await DB.getTasks(currentProjectId);
+  const t = tasks.find(x => x.id === id); if (!t) return;
+  const s = t.status === 'completed' ? 'not_started' : 'completed';
+  await DB.updateTask(id, { status: s, progress_pct: s === 'completed' ? 100 : 0 });
+  renderProject();
+}
+
+function toggleUnassigned() {
+  const sec = document.getElementById('unassigned-sec');
+  const body = document.getElementById('unassigned-body');
+  sec.classList.toggle('collapsed');
+  body.style.display = sec.classList.contains('collapsed') ? 'none' : '';
+}
+
+async function delMs(id) {
+  if (!confirm('Hapus milestone? Tasks di dalamnya pindah ke "Tasks tanpa Milestone".')) return;
+  await DB.deleteMilestone(id); toast('Milestone dihapus'); renderProject();
+}
+
+async function delTask(id) {
+  if (!confirm('Hapus task ini?')) return;
+  await DB.deleteTask(id); toast('Task dihapus'); renderProject();
+}
+
+async function deleteProject() {
+  const projects = await DB.getProjects();
+  const p = projects.find(x => x.id === currentProjectId); if (!p) return;
+  if (!confirm(`Hapus project "${p.name}"?`)) return;
+  await DB.deleteProject(currentProjectId); currentProjectId = null; showPage('dashboard');
+}
+
+// ── WIZARD ────────────────────────────────────────────────────────────
+let wizStep = 0, wizProjId = null, wizMs = [];
+
+function startWizard() {
+  wizStep = 0; wizProjId = null; wizMs = [];
+  renderWizStep();
+  document.getElementById('wiz-overlay').classList.add('open');
+}
+
+function renderWizStep() {
+  [0, 1, 2].forEach(i => {
+    const el = document.getElementById('ws-' + i);
+    el.className = 'wizard-step' + (i === wizStep ? ' active' : i < wizStep ? ' done' : '');
+  });
+  document.getElementById('wiz-back').style.visibility = wizStep === 0 ? 'hidden' : 'visible';
+  document.getElementById('wiz-next').textContent = wizStep === 2 ? 'Mulai Project! 🚀' : 'Lanjut →';
+  const body = document.getElementById('wiz-body');
+  if (wizStep === 0) {
+    body.innerHTML = `
+      <h3 style="margin-bottom:4px">Tentukan Project</h3>
+      <p style="color:var(--muted);font-size:13px;margin-bottom:16px">Mulai dengan nama dan tujuan akhir project kamu.</p>
+      <div class="form-group"><label>Nama Project *</label><input type="text" id="wiz-name" placeholder="Nama project"></div>
+      <div class="form-group"><label>End Goal</label><textarea id="wiz-goal" placeholder="Contoh: Meluncurkan website company profile sebelum Q3 2026"></textarea></div>
+      <div class="form-row">
+        <div class="form-group"><label>Tanggal Mulai</label><input type="date" id="wiz-start"></div>
+        <div class="form-group"><label>Deadline</label><input type="date" id="wiz-end"></div>
+      </div>`;
+    setTimeout(() => document.getElementById('wiz-name')?.focus(), 50);
+  } else if (wizStep === 1) {
+    const rows = wizMs.map((m, i) => `
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+        <span>🏁</span>
+        <input type="text" value="${esc(m.name)}" style="flex:1;border:1px solid var(--border-dark);border-radius:var(--radius);padding:7px 10px;font-size:13px;font-family:var(--font)" onchange="wizMs[${i}].name=this.value" placeholder="Nama milestone">
+        <input type="date" value="${m.date || ''}" style="width:136px;border:1px solid var(--border-dark);border-radius:var(--radius);padding:7px 10px;font-size:13px;font-family:var(--font)" onchange="wizMs[${i}].date=this.value">
+        <button class="btn btn-ghost btn-icon btn-sm" onclick="wizMs.splice(${i},1);renderWizStep()">✕</button>
+      </div>`).join('');
+    body.innerHTML = `
+      <h3 style="margin-bottom:4px">Tentukan Milestones</h3>
+      <p style="color:var(--muted);font-size:13px;margin-bottom:16px">Tonggak penting menuju end goal. Bisa dilewati dan ditambah nanti.</p>
+      <div>${rows}</div>
+      <button class="btn btn-secondary btn-sm" style="margin-top:4px" onclick="wizMs.push({name:'',date:''});renderWizStep()">+ Add Milestone</button>`;
+  } else {
+    body.innerHTML = `
+      <div style="text-align:center;padding:16px 0">
+        <div style="font-size:44px;margin-bottom:12px">🎉</div>
+        <h3 style="margin-bottom:8px">Project siap!</h3>
+        <p style="color:var(--muted);font-size:13px">Sekarang tambahkan tasks di setiap milestone untuk mulai tracking.</p>
+      </div>`;
+  }
+}
+
+async function wizNext() {
+  if (wizStep === 0) {
+    const name = document.getElementById('wiz-name').value.trim();
+    if (!name) { toast('Nama project wajib diisi', 'err'); return; }
+    const p = await DB.createProject({
+      name, goal: document.getElementById('wiz-goal').value.trim(),
+      start_date: document.getElementById('wiz-start').value || null,
+      end_date: document.getElementById('wiz-end').value || null,
+      status: 'planning'
+    });
+    if (!p) return;
+    wizProjId = p.id;
+    wizStep = 1; renderWizStep();
+  } else if (wizStep === 1) {
+    for (const m of wizMs.filter(x => x.name.trim())) {
+      await DB.createMilestone({ project_id: wizProjId, name: m.name.trim(), date: m.date || null, status: 'not_started', order: 0 });
+    }
+    wizStep = 2; renderWizStep();
+  } else {
+    document.getElementById('wiz-overlay').classList.remove('open');
+    currentProjectId = wizProjId;
+    showPage('project');
+    toast('Project dibuat! Tambahkan tasks di setiap milestone.', 'ok');
+  }
+}
+function wizBack() { if (wizStep > 0) { wizStep--; renderWizStep(); } }
+
+// ── PROJECT MODAL ─────────────────────────────────────────────────────
+let editProjId = null;
+async function openProjModal(id = null) {
+  editProjId = id;
+  document.getElementById('proj-modal-title').textContent = id ? 'Edit Project' : 'New Project';
+  if (id) {
+    const projects = await DB.getProjects();
+    const p = projects.find(x => x.id === id);
+    document.getElementById('pf-name').value = p?.name || '';
+    document.getElementById('pf-goal').value = p?.goal || '';
+    document.getElementById('pf-start').value = p?.start_date || '';
+    document.getElementById('pf-end').value = p?.end_date || '';
+    document.getElementById('pf-status').value = p?.status || 'planning';
+  } else {
+    ['pf-name','pf-goal','pf-start','pf-end'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('pf-status').value = 'planning';
+  }
+  document.getElementById('proj-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('pf-name').focus(), 50);
+}
+function closeProjModal() { document.getElementById('proj-overlay').classList.remove('open'); editProjId = null; }
+async function saveProjModal() {
+  const name = document.getElementById('pf-name').value.trim();
+  if (!name) { toast('Nama wajib diisi', 'err'); return; }
+  const d = { name, goal: document.getElementById('pf-goal').value.trim(), start_date: document.getElementById('pf-start').value || null, end_date: document.getElementById('pf-end').value || null, status: document.getElementById('pf-status').value };
+  if (editProjId) { await DB.updateProject(editProjId, d); toast('Project diupdate'); }
+  else { const p = await DB.createProject(d); if (p) { currentProjectId = p.id; } toast('Project dibuat', 'ok'); }
+  closeProjModal();
+  if (document.getElementById('page-dashboard').classList.contains('active')) renderDashboard();
+  else renderProject();
+}
+
+// ── MILESTONE MODAL ───────────────────────────────────────────────────
+let editMsId = null;
+async function openMsModal(id = null) {
+  editMsId = id;
+  document.getElementById('ms-modal-title').textContent = id ? 'Edit Milestone' : 'New Milestone';
+  if (id) {
+    const miles = await DB.getMilestones(currentProjectId);
+    const m = miles.find(x => x.id === id);
+    document.getElementById('mf-name').value = m?.name || '';
+    document.getElementById('mf-desc').value = m?.description || '';
+    document.getElementById('mf-date').value = m?.date || '';
+    document.getElementById('mf-status').value = m?.status || 'not_started';
+  } else {
+    ['mf-name','mf-desc','mf-date'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('mf-status').value = 'not_started';
+  }
+  document.getElementById('ms-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('mf-name').focus(), 50);
+}
+function closeMsModal() { document.getElementById('ms-overlay').classList.remove('open'); editMsId = null; }
+async function saveMsModal() {
+  const name = document.getElementById('mf-name').value.trim();
+  if (!name) { toast('Nama milestone wajib diisi', 'err'); return; }
+  const d = { project_id: currentProjectId, name, description: document.getElementById('mf-desc').value.trim(), date: document.getElementById('mf-date').value || null, status: document.getElementById('mf-status').value, order: 0 };
+  if (editMsId) { await DB.updateMilestone(editMsId, d); toast('Milestone diupdate'); }
+  else { await DB.createMilestone(d); toast('Milestone ditambahkan', 'ok'); }
+  closeMsModal(); renderProject();
+}
+
+// ── TASK MODAL ────────────────────────────────────────────────────────
+let editTaskId = null, taskMsId = null;
+async function openTaskModal(msId, editId) {
+  editTaskId = editId; taskMsId = msId;
+  document.getElementById('task-modal-title').textContent = editId ? 'Edit Task' : 'New Task';
+  if (editId) {
+    const tasks = await DB.getTasks(currentProjectId);
+    const t = tasks.find(x => x.id === editId);
+    document.getElementById('tf-name').value = t?.name || '';
+    document.getElementById('tf-desc').value = t?.description || '';
+    document.getElementById('tf-start').value = t?.start_date || '';
+    document.getElementById('tf-end').value = t?.end_date || '';
+    document.getElementById('tf-assign').value = t?.assigned_to || '';
+    document.getElementById('tf-deps').value = t?.dependencies_text || '';
+    document.getElementById('tf-status').value = t?.status || 'not_started';
+    document.getElementById('tf-prog').value = t?.progress_pct || 0;
+  } else {
+    ['tf-name','tf-desc','tf-start','tf-end','tf-assign','tf-deps'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('tf-status').value = 'not_started';
+    document.getElementById('tf-prog').value = 0;
+  }
+  document.getElementById('task-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('tf-name').focus(), 50);
+}
+function closeTaskModal() { document.getElementById('task-overlay').classList.remove('open'); }
+async function saveTaskModal() {
+  const name = document.getElementById('tf-name').value.trim();
+  if (!name) { toast('Nama task wajib diisi', 'err'); return; }
+  const start = document.getElementById('tf-start').value;
+  const end = document.getElementById('tf-end').value;
+  const dur = start && end ? Math.max(0, Math.round((new Date(end) - new Date(start)) / 86400000)) : 0;
+  const d = {
+    project_id: currentProjectId,
+    milestone_id: editTaskId ? (await DB.getTasks(currentProjectId)).find(x => x.id === editTaskId)?.milestone_id : taskMsId,
+    name, description: document.getElementById('tf-desc').value.trim(),
+    start_date: start || null, end_date: end || null, duration_days: dur,
+    assigned_to: document.getElementById('tf-assign').value.trim(),
+    dependencies_text: document.getElementById('tf-deps').value.trim(),
+    status: document.getElementById('tf-status').value,
+    progress_pct: parseInt(document.getElementById('tf-prog').value) || 0,
+    order: 0
+  };
+  if (editTaskId) { await DB.updateTask(editTaskId, d); toast('Task diupdate'); }
+  else { await DB.createTask(d); toast('Task ditambahkan', 'ok'); }
+  closeTaskModal(); renderProject();
+}
+
+// ── GANTT ─────────────────────────────────────────────────────────────
+async function renderGantt() {
+  const projects = await DB.getProjects();
+  const p = projects.find(x => x.id === currentProjectId); if (!p) return;
+  document.getElementById('gantt-title').textContent = p.name + ' — Gantt';
+  document.getElementById('gantt-sub').textContent = p.goal ? '🎯 ' + p.goal : '';
+  const [all, miles] = await Promise.all([DB.getTasks(currentProjectId), DB.getMilestones(currentProjectId)]);
+  const withD = all.filter(t => t.start_date);
+  const container = document.getElementById('gantt-container');
+  if (!withD.length) { container.innerHTML = '<div class="empty"><div class="empty-icon">📅</div><h3>Tidak ada task dengan tanggal</h3><p>Set tanggal pada task agar muncul di Gantt.</p></div>'; return; }
+  const dates = withD.flatMap(t => [t.start_date, t.end_date].filter(Boolean));
+  const minD = new Date(Math.min(...dates.map(d => new Date(d)))); minD.setDate(minD.getDate() - 7);
+  const maxD = new Date(Math.max(...dates.map(d => new Date(d)))); maxD.setDate(maxD.getDate() + 14);
+  const total = Math.ceil((maxD - minD) / 86400000);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const todayOff = Math.floor((today - minD) / 86400000);
+  const DW = gDW;
+  const days = []; for (let i = 0; i < total; i++) { const d = new Date(minD); d.setDate(d.getDate() + i); days.push(d); }
+  let hdr = ''; const seen = {};
+  days.forEach((d, i) => {
+    const wk = d.getDay() === 0 || d.getDay() === 6; const ms = d.getDate() === 1 || i === 0;
+    let ml = ''; const mk = d.getFullYear() + '-' + d.getMonth();
+    if (!seen[mk]) { seen[mk] = 1; ml = '<span style="position:absolute;top:4px;left:4px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">' + d.toLocaleString('id-ID', { month: 'short', year: '2-digit' }) + '</span>'; }
+    hdr += `<div style="min-width:${DW}px;width:${DW}px;border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:4px;font-size:10px;color:var(--light);position:relative;flex-shrink:0${wk ? ';background:#f8f9fc' : ''}${ms ? ';border-left:2px solid var(--border-dark)' : ''}">${ml}<span>${d.getDate()}</span></div>`;
+  });
+  function tLine() { if (todayOff < 0 || todayOff >= total) return ''; const tx = todayOff * DW + DW / 2; return `<div style="position:absolute;top:0;bottom:0;left:${tx}px;width:2px;background:var(--accent);opacity:.35;z-index:5;pointer-events:none"></div>`; }
+  function cells() { let c = ''; days.forEach((d, i) => { const wk = d.getDay() === 0 || d.getDay() === 6; const ms = d.getDate() === 1 || i === 0; c += `<div style="min-width:${DW}px;width:${DW}px;border-right:1px solid var(--border);flex-shrink:0${wk ? ';background:#f8f9fc' : ''}${ms ? ';border-left:2px solid var(--border-dark)' : ''}"></div>`; }); return c; }
+  let leftH = '', rightH = '';
+  function addRow(task, indent) {
+    leftH += `<div style="height:34px;display:flex;align-items:center;padding:0 12px${indent ? ';padding-left:24px' : ''};border-bottom:1px solid var(--border);font-size:12px;gap:5px;overflow:hidden"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${esc(task.name)}</span>${task.assigned_to ? `<span style="font-size:10px;color:var(--light)">· ${esc(task.assigned_to)}</span>` : ''}</div>`;
+    let bar = '';
+    if (task.start_date) {
+      const s = new Date(task.start_date); s.setHours(0, 0, 0, 0);
+      const e = task.end_date ? new Date(task.end_date) : new Date(s); e.setHours(0, 0, 0, 0);
+      const sOff = Math.floor((s - minD) / 86400000);
+      const dur = Math.max(1, Math.ceil((e - s) / 86400000) + 1);
+      const lx = sOff * DW, wx = dur * DW - 2;
+      const col = task.status === 'completed' ? 'var(--success)' : task.status === 'on_hold' ? 'var(--warning)' : indent ? '#93c5fd' : 'var(--accent)';
+      bar = `<div style="position:absolute;height:18px;top:8px;border-radius:4px;background:${col};opacity:.88;left:${lx}px;width:${wx}px;display:flex;align-items:center;padding:0 6px;font-size:10px;color:#fff;overflow:hidden;white-space:nowrap;pointer-events:none;z-index:2"><div style="position:absolute;left:0;top:0;bottom:0;width:${task.progress_pct}%;background:rgba(255,255,255,.25);border-radius:4px"></div>${wx > 40 ? `<span style="position:relative">${esc(task.name)}</span>` : ''}</div>`;
+    }
+    rightH += `<div style="height:34px;display:flex;border-bottom:1px solid var(--border);position:relative;width:${total * DW}px">${cells()}${bar}${tLine()}</div>`;
+  }
+  miles.forEach(m => {
+    const mTasks = all.filter(t => t.milestone_id === m.id && t.start_date);
+    if (!mTasks.length) return;
+    leftH += `<div style="height:28px;display:flex;align-items:center;padding:0 12px;background:linear-gradient(to right,#faf5ff,#fff);border-bottom:1px solid var(--border);font-size:11px;font-weight:700;gap:4px;overflow:hidden"><span>🏁</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(m.name)}</span></div>`;
+    let mBar = '';
+    if (m.date) { const md = new Date(m.date); md.setHours(0, 0, 0, 0); const mOff = Math.floor((md - minD) / 86400000); const mx = mOff * DW + DW / 2 - 9; mBar = `<div style="position:absolute;top:5px;left:${mx}px;width:16px;height:16px;background:var(--milestone);border-radius:3px;transform:rotate(45deg);z-index:3;pointer-events:none"></div>`; }
+    rightH += `<div style="height:28px;display:flex;border-bottom:1px solid var(--border);position:relative;width:${total * DW}px;background:linear-gradient(to right,#faf5ff44,transparent)">${cells()}${mBar}${tLine()}</div>`;
+    mTasks.forEach(t => addRow(t, true));
+  });
+  const uTasks = all.filter(t => !t.milestone_id && t.start_date);
+  if (uTasks.length) {
+    leftH += `<div style="height:24px;display:flex;align-items:center;padding:0 12px;background:var(--bg);border-bottom:1px solid var(--border);font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase">Tasks lainnya</div>`;
+    rightH += `<div style="height:24px;display:flex;border-bottom:1px solid var(--border);width:${total * DW}px;background:var(--bg)">${cells()}${tLine()}</div>`;
+    uTasks.forEach(t => addRow(t, false));
+  }
+  let tHdr = '';
+  if (todayOff >= 0 && todayOff < total) { const tx = todayOff * DW + DW / 2; tHdr = `<div style="position:absolute;left:${tx}px;top:0;bottom:0;width:2px;background:var(--accent);opacity:.35;z-index:11;pointer-events:none"></div><div style="position:absolute;left:${tx}px;top:3px;background:var(--accent);color:#fff;font-size:9px;padding:1px 4px;border-radius:3px;transform:translateX(-50%);white-space:nowrap;z-index:12">Hari ini</div>`; }
+  container.innerHTML = `<div style="display:flex;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-sm)"><div style="min-width:220px;max-width:220px;border-right:2px solid var(--border-dark);flex-shrink:0"><div style="height:50px;display:flex;align-items:center;padding:0 12px;background:var(--bg);border-bottom:1px solid var(--border);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)">Task / Milestone</div>${leftH}</div><div style="flex:1;overflow-x:auto" id="gantt-scroll"><div style="display:flex;height:50px;border-bottom:1px solid var(--border);background:var(--bg);width:${total * DW}px;position:relative">${hdr}${tHdr}</div>${rightH}</div></div>`;
+  scrollToday(false);
+}
+
+function scrollToday(smooth = true) {
+  const el = document.getElementById('gantt-scroll'); if (!el) return;
+  el.scrollTo({ left: Math.max(0, 7 * gDW), behavior: smooth ? 'smooth' : 'auto' });
+}
+function zoomG(d) { gDW = Math.max(16, Math.min(56, gDW + d)); renderGantt(); }
+
+// ── TOAST ─────────────────────────────────────────────────────────────
+function toast(msg, type = '') {
+  const el = document.createElement('div'); el.className = 'toast' + (type ? ' ' + type : ''); el.textContent = msg;
+  document.getElementById('toasts').appendChild(el);
+  requestAnimationFrame(() => el.classList.add('show'));
+  setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 200); }, 2500);
+}
+
+// ── KEYBOARD ──────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeProjModal(); closeMsModal(); closeTaskModal(); document.getElementById('wiz-overlay').classList.remove('open'); }
+  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+    if (document.getElementById('proj-overlay').classList.contains('open')) saveProjModal();
+    if (document.getElementById('ms-overlay').classList.contains('open')) saveMsModal();
+    if (document.getElementById('task-overlay').classList.contains('open')) saveTaskModal();
+  }
+});
+
+// ── INIT ──────────────────────────────────────────────────────────────
+initAuth();
+</script>
+</body>
+</html>
