@@ -835,6 +835,20 @@ document.addEventListener('keydown',e=>{
 });
 
 // ── INIT ──────────────────────────────────────────────────────────────
+function migrateData(){
+  const db=load();
+  if(!db.milestones)db.milestones=[];
+  db.tasks.forEach(t=>{
+    if(t.milestone_id===undefined)t.milestone_id=null;
+    if(t.assigned_to===undefined)t.assigned_to='';
+    if(t.dependencies_text===undefined)t.dependencies_text='';
+  });
+  db.projects.forEach(p=>{
+    if(p.goal===undefined)p.goal='';
+  });
+  save(db);
+}
+migrateData();
 renderDashboard();
 updateHeader('dashboard');
 </script>
