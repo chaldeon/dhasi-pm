@@ -579,7 +579,7 @@ async function renderDashboard() {
     return `<button class="project-card" onclick="openProject('${p.id}')">
       <div class="project-card-top">
         <div><h3>${esc(p.name)}</h3><span class="badge badge-${p.status}">${p.status.replace('_', ' ')}</span></div>
-        <button class="btn btn-ghost btn-icon btn-sm" onclick="event.stopPropagation();openProjModal('${p.id}')">✏️</button>
+        <div class="btn btn-ghost btn-icon btn-sm" onclick="event.stopPropagation();openProjModal('${p.id}')">✏️</div>
       </div>
       <div class="goal-preview">${p.goal ? '🎯 ' + esc(p.goal) : '<em>End goal belum diset</em>'}</div>
       <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
