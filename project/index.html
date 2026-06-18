@@ -391,12 +391,10 @@ const ALLOWED_EMAILS = ['danielsidabutar.11@gmail.com'];
 const { createClient } = supabase;
 const sb = createClient(SUPA_URL, SUPA_KEY, {
   auth: {
-    storage: window.localStorage,
-    storageKey: 'dhasi-pm-auth',
-    flowType: 'pkce'
+    flowType: 'implicit'
   }
 });
-
+  
 let currentUser = null;
 let currentProjectId = null;
 let gDW = 28;
@@ -405,7 +403,10 @@ let gDW = 28;
 async function signInGoogle() {
   const { error } = await sb.auth.signInWithOAuth({
     provider: 'google',
-    options: { redirectTo: 'https://dhasi.my.id/project' }
+    options: { 
+  redirectTo: 'https://dhasi.my.id/project',
+  queryParams: { access_type: 'offline', prompt: 'consent' }
+}
   });
   if (error) toast('Login gagal: ' + error.message, 'err');
 }
