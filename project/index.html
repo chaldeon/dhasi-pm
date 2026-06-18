@@ -389,7 +389,13 @@ const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsI
 const ALLOWED_EMAILS = ['danielsidabutar.11@gmail.com'];
 
 const { createClient } = supabase;
-const sb = createClient(SUPA_URL, SUPA_KEY);
+const sb = createClient(SUPA_URL, SUPA_KEY, {
+  auth: {
+    storage: window.localStorage,
+    storageKey: 'dhasi-pm-auth',
+    flowType: 'pkce'
+  }
+});
 
 let currentUser = null;
 let currentProjectId = null;
