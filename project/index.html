@@ -414,9 +414,10 @@ async function signInGoogle() {
 
 async function signOut() {
   await sb.auth.signOut();
-  location.reload();
+  document.getElementById('app-main').style.display = 'none';
+  document.getElementById('app-login').style.display = 'flex';
 }
-
+  
 async function initAuth() {
   const { data: { session } } = await sb.auth.getSession();
   if (session?.user) {
