@@ -312,56 +312,6 @@ textarea{resize:vertical;min-height:72px;}
         </div>
       </div>
     </div>
-
-// ── ASSUMPTIONS ───────────────────────────────────────────────────────
-async function renderAssumptions() {
-  const list = await Assumptions.byProject(currentProjectId);
-  const sec = document.getElementById('assumptions-section');
-  if (!list.length) { sec.style.display = 'none'; return; }
-  sec.style.display = '';
-  document.getElementById('assumptions-list').innerHTML = list.map(a => `
-    <div class="task-item">
-      <div class="task-main">
-        <div class="task-name-text">${esc(a.label)}: <b>${esc(a.current_value)}</b></div>
-        ${a.history?.length ? `<div class="task-sub"><span class="task-sub-item">🕒 Diubah ${a.history.length}x — sebelumnya: ${esc(a.history[a.history.length-1].value)}</span></div>` : ''}
-      </div>
-      <div class="task-right">
-        <div class="task-act" style="opacity:1">
-          <button class="btn btn-ghost btn-icon btn-sm" onclick="openAssumptionModal('${a.id}','${esc(a.current_value)}')">✏️</button>
-          <button class="btn btn-ghost btn-icon btn-sm" onclick="delAssumption('${a.id}')">🗑</button>
-        </div>
-      </div>
-    </div>`).join('');
-}
-
-let editAssumpId = null, editAssumpOldVal = null;
-function openAssumptionModal(id = null, oldVal = null) {
-  editAssumpId = id; editAssumpOldVal = oldVal;
-  document.getElementById('assump-modal-title').textContent = id ? 'Edit Assumption' : 'New Assumption';
-  document.getElementById('af-label').value = '';
-  document.getElementById('af-value').value = oldVal || '';
-  document.getElementById('assump-overlay').classList.add('open');
-}
-function closeAssumpModal() { document.getElementById('assump-overlay').classList.remove('open'); editAssumpId = null; }
-async function saveAssumpModal() {
-  const value = document.getElementById('af-value').value.trim();
-  if (!value) { toast('Nilai wajib diisi', 'err'); return; }
-  if (editAssumpId) {
-    await Assumptions.update(editAssumpId, value, editAssumpOldVal);
-    toast('Assumption diupdate');
-  } else {
-    const label = document.getElementById('af-label').value.trim();
-    if (!label) { toast('Label wajib diisi', 'err'); return; }
-    await Assumptions.create({ project_id: currentProjectId, label, current_value: value });
-    toast('Assumption ditambahkan', 'ok');
-  }
-  closeAssumpModal();
-  renderAssumptions();
-}
-async function delAssumption(id) {
-  if (!confirm('Hapus assumption ini?')) return;
-  await Assumptions.delete(id); toast('Assumption dihapus'); renderAssumptions();
-}
     
     <!-- GANTT -->
     <div class="page" id="page-gantt">
@@ -546,6 +496,56 @@ async function initAuth() {
     showLogin();
   }
 
+// ── ASSUMPTIONS ───────────────────────────────────────────────────────
+async function renderAssumptions() {
+  const list = await Assumptions.byProject(currentProjectId);
+  const sec = document.getElementById('assumptions-section');
+  if (!list.length) { sec.style.display = 'none'; return; }
+  sec.style.display = '';
+  document.getElementById('assumptions-list').innerHTML = list.map(a => `
+    <div class="task-item">
+      <div class="task-main">
+        <div class="task-name-text">${esc(a.label)}: <b>${esc(a.current_value)}</b></div>
+        ${a.history?.length ? `<div class="task-sub"><span class="task-sub-item">🕒 Diubah ${a.history.length}x — sebelumnya: ${esc(a.history[a.history.length-1].value)}</span></div>` : ''}
+      </div>
+      <div class="task-right">
+        <div class="task-act" style="opacity:1">
+          <button class="btn btn-ghost btn-icon btn-sm" onclick="openAssumptionModal('${a.id}','${esc(a.current_value)}')">✏️</button>
+          <button class="btn btn-ghost btn-icon btn-sm" onclick="delAssumption('${a.id}')">🗑</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+let editAssumpId = null, editAssumpOldVal = null;
+function openAssumptionModal(id = null, oldVal = null) {
+  editAssumpId = id; editAssumpOldVal = oldVal;
+  document.getElementById('assump-modal-title').textContent = id ? 'Edit Assumption' : 'New Assumption';
+  document.getElementById('af-label').value = '';
+  document.getElementById('af-value').value = oldVal || '';
+  document.getElementById('assump-overlay').classList.add('open');
+}
+function closeAssumpModal() { document.getElementById('assump-overlay').classList.remove('open'); editAssumpId = null; }
+async function saveAssumpModal() {
+  const value = document.getElementById('af-value').value.trim();
+  if (!value) { toast('Nilai wajib diisi', 'err'); return; }
+  if (editAssumpId) {
+    await Assumptions.update(editAssumpId, value, editAssumpOldVal);
+    toast('Assumption diupdate');
+  } else {
+    const label = document.getElementById('af-label').value.trim();
+    if (!label) { toast('Label wajib diisi', 'err'); return; }
+    await Assumptions.create({ project_id: currentProjectId, label, current_value: value });
+    toast('Assumption ditambahkan', 'ok');
+  }
+  closeAssumpModal();
+  renderAssumptions();
+}
+async function delAssumption(id) {
+  if (!confirm('Hapus assumption ini?')) return;
+  await Assumptions.delete(id); toast('Assumption dihapus'); renderAssumptions();
+}
+  
   sb.auth.onAuthStateChange(async (event, session) => {
     if (event === 'SIGNED_IN' && session?.user) {
       const email = session.user.email;
