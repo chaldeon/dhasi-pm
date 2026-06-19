@@ -894,9 +894,11 @@ async function openMsModal(id = null) {
     document.getElementById('mf-name').value = m?.name || '';
     document.getElementById('mf-desc').value = m?.description || '';
     document.getElementById('mf-date').value = m?.date || '';
+    document.getElementById('mf-target').value = m?.target_amount ?? '';
+    document.getElementById('mf-target-stretch').value = m?.target_amount_stretch ?? '';
     document.getElementById('mf-status').value = m?.status || 'not_started';
   } else {
-    ['mf-name','mf-desc','mf-date'].forEach(id => document.getElementById(id).value = '');
+    ['mf-name','mf-desc','mf-date','mf-target','mf-target-stretch'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('mf-status').value = 'not_started';
   }
   document.getElementById('ms-overlay').classList.add('open');
@@ -906,7 +908,10 @@ function closeMsModal() { document.getElementById('ms-overlay').classList.remove
 async function saveMsModal() {
   const name = document.getElementById('mf-name').value.trim();
   if (!name) { toast('Nama milestone wajib diisi', 'err'); return; }
-  const d = { project_id: currentProjectId, name, description: document.getElementById('mf-desc').value.trim(), date: document.getElementById('mf-date').value || null, status: document.getElementById('mf-status').value, order: 0 };
+  const d = { project_id: currentProjectId, name, description: document.getElementById('mf-desc').value.trim(), date: document.getElementById('mf-date').value || null, status: document.getElementById('mf-status').value, order: 0,
+  target_amount: document.getElementById('mf-target').value ? Number(document.getElementById('mf-target').value) : null,
+  target_amount_stretch: document.getElementById('mf-target-stretch').value ? Number(document.getElementById('mf-target-stretch').value) : null
+};
   if (editMsId) { await DB.updateMilestone(editMsId, d); toast('Milestone diupdate'); }
   else { await DB.createMilestone(d); toast('Milestone ditambahkan', 'ok'); }
   closeMsModal(); renderProject();
@@ -926,10 +931,15 @@ async function openTaskModal(msId, editId) {
     document.getElementById('tf-end').value = t?.end_date || '';
     document.getElementById('tf-assign').value = t?.assigned_to || '';
     document.getElementById('tf-deps').value = t?.dependencies_text || '';
+    document.getElementById('tf-target').value = t?.target_amount ?? '';
+    document.getElementById('tf-actual').value = t?.actual_amount ?? '';
+    document.getElementById('tf-amount-type').value = t?.amount_type || '';
+    document.getElementById('tf-category').value = t?.category_tag || '';
     document.getElementById('tf-status').value = t?.status || 'not_started';
     document.getElementById('tf-prog').value = t?.progress_pct || 0;
   } else {
-    ['tf-name','tf-desc','tf-start','tf-end','tf-assign','tf-deps'].forEach(id => document.getElementById(id).value = '');
+    ['tf-name','tf-desc','tf-start','tf-end','tf-assign','tf-deps','tf-target','tf-actual','tf-category'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('tf-amount-type').value = '';
     document.getElementById('tf-status').value = 'not_started';
     document.getElementById('tf-prog').value = 0;
   }
@@ -950,6 +960,10 @@ async function saveTaskModal() {
     start_date: start || null, end_date: end || null, duration_days: dur,
     assigned_to: document.getElementById('tf-assign').value.trim(),
     dependencies_text: document.getElementById('tf-deps').value.trim(),
+    target_amount: document.getElementById('tf-target').value ? Number(document.getElementById('tf-target').value) : null,
+    actual_amount: document.getElementById('tf-actual').value ? Number(document.getElementById('tf-actual').value) : null,
+    amount_type: document.getElementById('tf-amount-type').value || null,
+    category_tag: document.getElementById('tf-category').value.trim() || null,
     status: document.getElementById('tf-status').value,
     progress_pct: parseInt(document.getElementById('tf-prog').value) || 0,
     order: 0
