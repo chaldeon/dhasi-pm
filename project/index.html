@@ -1047,6 +1047,28 @@ async function handleImport(e) {
   reader.readAsText(f);
   e.target.value = '';
 }
+
+// ── FINANCIAL HELPERS ────────────────────────────────────────────────
+function calcRunningBalance(tasks) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  return tasks
+    .filter(t => t.end_date && t.actual_amount != null && new Date(t.end_date) <= today)
+    .sort((a,b) => new Date(a.end_date) - new Date(b.end_date))
+    .reduce((bal, t) => bal + (t.amount_type === 'out' ? -Number(t.actual_amount) : Number(t.actual_amount)), 0);
+}
+function isFinancialProject(tasks, miles) {
+  return tasks.some(t => t.target_amount != null) || miles.some(m => m.target_amount != null);
+}
+function fmtMoney(n) {
+  if (n == null) return '—';
+  return 'Rp ' + Number(n).toLocaleString('id-ID');
+}
+function calcMsProgress(m, tasks) {
+  if (m.target_amount == null) return null;
+  const msTasks = tasks.filter(t => t.milestone_id === m.id && t.actual_amount != null);
+  const actual = msTasks.reduce((s,t) => s + (t.amount_type==='out' ? -Number(t.actual_amount) : Number(t.actual_amount)), 0);
+  return { actual, target: Number(m.target_amount), stretch: m.target_amount_stretch != null ? Number(m.target_amount_stretch) : null, pct: Math.min(100, Math.round(actual/Number(m.target_amount)*100)) };
+}
   
 // ── TOAST ─────────────────────────────────────────────────────────────
 function toast(msg, type = '') {
