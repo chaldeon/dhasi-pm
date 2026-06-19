@@ -150,6 +150,15 @@ textarea{resize:vertical;min-height:72px;}
 .summary-chip.warn{border-color:var(--warning);}
 .summary-chip.warn .lbl{color:var(--warning);}
 .summary-chip.warn .val{color:var(--warning);}
+.fin-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 20px;margin-bottom:16px;box-shadow:var(--shadow-sm);}
+.fin-card-hdr{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px;}
+.fin-card-hdr h3{font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px;}
+.fin-balance{font-size:26px;font-weight:800;color:var(--success);}
+.fin-balance.neg{color:var(--danger);}
+.fin-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;}
+.fin-chip{background:var(--bg);border-radius:var(--radius);padding:8px 12px;font-size:12px;flex:1;min-width:140px;}
+.fin-chip .lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:2px;}
+.fin-chip .val{font-weight:700;font-size:14px;}
 
 /* SECTION */
 .sec-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
@@ -263,6 +272,7 @@ textarea{resize:vertical;min-height:72px;}
         </div>
       </div>
       <div class="summary-row" id="det-summary"></div>
+      <div id="financial-summary"></div>  
       <div class="sec-header">
         <div class="sec-title">🏁 Milestones
           <div class="tip"><div class="tip-icon">i</div><div class="tip-box">Tonggak penting menuju end goal. Setiap milestone berisi tasks yang harus diselesaikan.</div></div>
@@ -624,6 +634,7 @@ async function renderProject() {
     <div class="summary-chip"><span class="lbl">Milestones</span><span class="val">${mileDone}/${miles.length}</span></div>`;
   if (noAssignee.length) summaryHTML += `<div class="summary-chip warn"><span class="lbl">⚠️ Unassigned</span><span class="val">${noAssignee.length}</span></div>`;
   document.getElementById('det-summary').innerHTML = summaryHTML;
+  renderFinancialSummary(allTasks, miles);
   renderMilestones(miles, allTasks);
   renderUnassigned(allTasks);
 }
@@ -1048,6 +1059,25 @@ async function handleImport(e) {
   e.target.value = '';
 }
 
+function renderFinancialSummary(tasks, miles) {
+  const el = document.getElementById('financial-summary');
+  if (!isFinancialProject(tasks, miles)) { el.innerHTML = ''; return; }
+  const balance = calcRunningBalance(tasks);
+  const totalTarget = miles.reduce((s,m) => s + (m.target_amount ? Number(m.target_amount) : 0), 0);
+  const totalStretch = miles.reduce((s,m) => s + (m.target_amount_stretch ? Number(m.target_amount_stretch) : 0), 0);
+  el.innerHTML = `<div class="fin-card">
+    <div class="fin-card-hdr">
+      <h3>💰 Running Balance <div class="tip"><div class="tip-icon">i</div><div class="tip-box">Akumulasi actual amount dari semua task yang sudah lewat tanggal selesainya.</div></div></h3>
+    </div>
+    <div class="fin-balance ${balance<0?'neg':''}">${fmtMoney(balance)}</div>
+    <div class="fin-row">
+      ${totalTarget?`<div class="fin-chip"><span class="lbl">Target Total</span><span class="val">${fmtMoney(totalTarget)}</span></div>`:''}
+      ${totalStretch?`<div class="fin-chip"><span class="lbl">Target Stretch</span><span class="val">${fmtMoney(totalStretch)}</span></div>`:''}
+      ${totalTarget?`<div class="fin-chip"><span class="lbl">Progress</span><span class="val">${Math.round(balance/totalTarget*100)}%</span></div>`:''}
+    </div>
+  </div>`;
+}
+  
 // ── FINANCIAL HELPERS ────────────────────────────────────────────────
 function calcRunningBalance(tasks) {
   const today = new Date(); today.setHours(0,0,0,0);
