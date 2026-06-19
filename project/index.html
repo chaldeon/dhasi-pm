@@ -280,6 +280,25 @@ textarea{resize:vertical;min-height:72px;}
         <button class="btn btn-secondary btn-sm" onclick="openMsModal()">+ Add Milestone</button>
       </div>
       <div id="ms-container"></div>
+      <div class="ms-block" id="assumptions-section">
+  <div class="ms-hdr">
+    <span style="font-size:16px">📝</span>
+    <div class="ms-name" style="flex:1">Assumptions Log
+      <div class="tip" style="display:inline-flex;margin-left:4px"><div class="tip-icon">i</div><div class="tip-box">Catat asumsi-asumsi kunci yang mendasari rencana ini. Setiap perubahan tercatat riwayatnya.</div></div>
+    </div>
+    <button class="btn btn-secondary btn-sm" onclick="openAssumptionModal()">+ Add Assumption</button>
+  </div>
+  <div class="task-list" id="assumptions-list"></div>
+</div>
+
+<div class="modal-overlay" id="assump-overlay" onclick="if(event.target===this)closeAssumpModal()">
+  <div class="modal">
+    <div class="modal-header"><h2 id="assump-modal-title">New Assumption</h2><button class="btn btn-ghost btn-icon" onclick="closeAssumpModal()">✕</button></div>
+    <div class="form-group"><label>Label *</label><input type="text" id="af-label" placeholder="Contoh: Asumsi inflasi"></div>
+    <div class="form-group"><label>Nilai Saat Ini *</label><input type="text" id="af-value" placeholder="Contoh: 10%/tahun"></div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeAssumpModal()">Batal</button><button class="btn btn-primary" onclick="saveAssumpModal()">Simpan</button></div>
+  </div>
+</div>
       <div class="unassigned-sec" id="unassigned-sec">
         <div class="unassigned-hdr" onclick="toggleUnassigned()">
           <span>📋</span>
@@ -294,6 +313,56 @@ textarea{resize:vertical;min-height:72px;}
       </div>
     </div>
 
+// ── ASSUMPTIONS ───────────────────────────────────────────────────────
+async function renderAssumptions() {
+  const list = await Assumptions.byProject(currentProjectId);
+  const sec = document.getElementById('assumptions-section');
+  if (!list.length) { sec.style.display = 'none'; return; }
+  sec.style.display = '';
+  document.getElementById('assumptions-list').innerHTML = list.map(a => `
+    <div class="task-item">
+      <div class="task-main">
+        <div class="task-name-text">${esc(a.label)}: <b>${esc(a.current_value)}</b></div>
+        ${a.history?.length ? `<div class="task-sub"><span class="task-sub-item">🕒 Diubah ${a.history.length}x — sebelumnya: ${esc(a.history[a.history.length-1].value)}</span></div>` : ''}
+      </div>
+      <div class="task-right">
+        <div class="task-act" style="opacity:1">
+          <button class="btn btn-ghost btn-icon btn-sm" onclick="openAssumptionModal('${a.id}','${esc(a.current_value)}')">✏️</button>
+          <button class="btn btn-ghost btn-icon btn-sm" onclick="delAssumption('${a.id}')">🗑</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+let editAssumpId = null, editAssumpOldVal = null;
+function openAssumptionModal(id = null, oldVal = null) {
+  editAssumpId = id; editAssumpOldVal = oldVal;
+  document.getElementById('assump-modal-title').textContent = id ? 'Edit Assumption' : 'New Assumption';
+  document.getElementById('af-label').value = '';
+  document.getElementById('af-value').value = oldVal || '';
+  document.getElementById('assump-overlay').classList.add('open');
+}
+function closeAssumpModal() { document.getElementById('assump-overlay').classList.remove('open'); editAssumpId = null; }
+async function saveAssumpModal() {
+  const value = document.getElementById('af-value').value.trim();
+  if (!value) { toast('Nilai wajib diisi', 'err'); return; }
+  if (editAssumpId) {
+    await Assumptions.update(editAssumpId, value, editAssumpOldVal);
+    toast('Assumption diupdate');
+  } else {
+    const label = document.getElementById('af-label').value.trim();
+    if (!label) { toast('Label wajib diisi', 'err'); return; }
+    await Assumptions.create({ project_id: currentProjectId, label, current_value: value });
+    toast('Assumption ditambahkan', 'ok');
+  }
+  closeAssumpModal();
+  renderAssumptions();
+}
+async function delAssumption(id) {
+  if (!confirm('Hapus assumption ini?')) return;
+  await Assumptions.delete(id); toast('Assumption dihapus'); renderAssumptions();
+}
+    
     <!-- GANTT -->
     <div class="page" id="page-gantt">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
@@ -669,6 +738,7 @@ async function renderProject() {
   if (noAssignee.length) summaryHTML += `<div class="summary-chip warn"><span class="lbl">⚠️ Unassigned</span><span class="val">${noAssignee.length}</span></div>`;
   document.getElementById('det-summary').innerHTML = summaryHTML;
   renderFinancialSummary(allTasks, miles);
+  renderAssumptions();
   renderMilestones(miles, allTasks);
   renderUnassigned(allTasks);
 }
