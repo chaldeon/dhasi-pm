@@ -587,6 +587,30 @@ async function dbQuery(fn) {
   catch(e) { toast('Error: ' + e.message, 'err'); return null; }
 }
 
+const Assumptions = {
+  async byProject(pid) {
+    const { data, error } = await sb.from('project_assumptions').select('*').eq('project_id', pid).order('created_at', { ascending: true });
+    if (error) { toast('Gagal load assumptions', 'err'); return []; }
+    return data || [];
+  },
+  async create(d) {
+    const { data, error } = await sb.from('project_assumptions').insert({ ...d, user_id: currentUser.id, history: [] }).select().single();
+    if (error) { toast('Gagal buat assumption', 'err'); return null; }
+    return data;
+  },
+  async update(id, newValue, oldValue) {
+    const { data: cur } = await sb.from('project_assumptions').select('history').eq('id', id).single();
+    const hist = cur?.history || [];
+    hist.push({ value: oldValue, changed_at: new Date().toISOString() });
+    const { error } = await sb.from('project_assumptions').update({ current_value: newValue, history: hist, updated_at: new Date().toISOString() }).eq('id', id).eq('user_id', currentUser.id);
+    if (error) toast('Gagal update assumption', 'err');
+  },
+  async delete(id) {
+    const { error } = await sb.from('project_assumptions').delete().eq('id', id).eq('user_id', currentUser.id);
+    if (error) toast('Gagal hapus assumption', 'err');
+  }
+};
+  
 // ── DATA LAYER ────────────────────────────────────────────────────────
 const DB = {
   async getProjects() {
