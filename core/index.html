@@ -348,16 +348,16 @@ function goDashboard(){
    ============================================================ */
 async function loadDashboard(){
   state.view = 'dashboard';
-  const { data: areas, error } = await supabase
+  const { data: areas, error } = await sb
     .from('core_areas')
     .select('*')
     .order('sort_order');
   if(error){ toast('Gagal memuat area: ' + error.message); return; }
 
-  const { data: projects } = await supabase
+  const { data: projects } = await sb
     .from('core_projects')
     .select('id, area_id, status, last_reviewed_at');
-  const { data: actions } = await supabase
+  const { data: actions } = await sb
     .from('core_next_actions')
     .select('id, project_id, is_done');
 
@@ -422,12 +422,12 @@ async function openArea(areaId){
 
 async function loadAreaDetail(areaId){
   const { data: area } = await sb.from('core_areas').select('*').eq('id', areaId).single();
-  const { data: projects } = await supabase
+  const { data: projects } = await sb
     .from('core_projects').select('*').eq('area_id', areaId).order('created_at');
   const projectIds = (projects||[]).map(p => p.id);
   let actions = [];
   if(projectIds.length){
-    const { data: a } = await supabase
+    const { data: a } = await sb
       .from('core_next_actions').select('*').in('project_id', projectIds).order('created_at');
     actions = a || [];
   }
@@ -527,7 +527,7 @@ function togglePresenting(){
 async function quickAdd(projectId, inputEl){
   const text = inputEl.value.trim();
   if(!text) return;
-  const { data, error } = await supabase
+  const { data, error } = await sb
     .from('core_next_actions')
     .insert({ project_id: projectId, text })
     .select().single();
@@ -572,7 +572,7 @@ function saveNote(projectId, value){
    WEEKLY REVIEW WIZARD
    ============================================================ */
 async function startReview(){
-  const { data: projects } = await supabase
+  const { data: projects } = await sb
     .from('core_projects')
     .select('*, core_areas(name)')
     .in('status', ['running','future'])
