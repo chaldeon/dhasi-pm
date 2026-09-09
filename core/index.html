@@ -200,8 +200,7 @@
 
 <div id="login-screen">
   <h1>CORE</h1>
-  <p>Capture → Organize → Review → Engage. Helicopter view mingguan untuk semua Area kehidupan.</p>
-  <button class="btn-google" id="btn-google-login">Masuk dengan Google</button>
+  <p>Mengalihkan ke halaman login...</p>
   <div id="login-error"></div>
 </div>
 
@@ -250,18 +249,11 @@ const state = {
 
 /* ============================================================
    AUTH
+   CORE tidak punya UI login sendiri. Kalau nggak ada session,
+   langsung redirect ke /project (halaman login yang sudah ada di
+   platform), lalu /project akan balikin user ke /core lagi setelah
+   berhasil login (lihat redirect_to di /project/index.html).
    ============================================================ */
-document.getElementById('btn-google-login').addEventListener('click', async () => {
-  document.getElementById('login-error').textContent = '';
-  const { error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      redirectTo: 'https://dhasi.my.id/core',
-      queryParams: { access_type: 'offline', prompt: 'consent' }
-    }
-  });
-  if (error) document.getElementById('login-error').textContent = 'Login gagal: ' + error.message;
-});
 
 async function initAuth(){
   const { data: { session } } = await supabase.auth.getSession();
@@ -273,14 +265,13 @@ async function initAuth(){
 
 async function handleSession(session){
   if(!session){
-    showLogin();
+    goToProjectLogin();
     return;
   }
   const email = session.user.email;
   if(!ALLOWED_EMAILS.includes(email)){
-    document.getElementById('login-error').textContent = `Akun ${email} tidak diizinkan mengakses CORE.`;
     await supabase.auth.signOut();
-    showLogin();
+    goToProjectLogin();
     return;
   }
   state.user = session.user;
@@ -288,10 +279,13 @@ async function handleSession(session){
   await loadDashboard();
 }
 
-function showLogin(){
-  document.getElementById('login-screen').classList.remove('hidden');
-  document.getElementById('app').classList.add('hidden');
+function goToProjectLogin(){
+  // Cegah redirect loop kalau entah kenapa fungsi ini kepanggil 2x
+  if(window.__redirectingToLogin) return;
+  window.__redirectingToLogin = true;
+  window.location.href = '/project?redirect_to=/core';
 }
+
 function showApp(){
   document.getElementById('login-screen').classList.add('hidden');
   document.getElementById('app').classList.remove('hidden');
