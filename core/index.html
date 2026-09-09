@@ -1,0 +1,1014 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CORE — dhasi.my.id</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --bg: #f5f6f3;
+    --surface: #ffffff;
+    --border: #e2e4de;
+    --ink: #1c2320;
+    --ink-soft: #5b625d;
+    --ink-faint: #8b928c;
+    --running: #2f6f63;
+    --running-bg: #e7f1ee;
+    --future: #b9862e;
+    --future-bg: #f8eedd;
+    --someday: #9aa1a6;
+    --someday-bg: #eef0f0;
+    --accent: #2f6f63;
+    --danger: #b3503f;
+    --radius: 10px;
+    --radius-lg: 16px;
+    --shadow: 0 1px 2px rgba(28,35,32,0.06), 0 1px 1px rgba(28,35,32,0.04);
+  }
+  *{ box-sizing: border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+  h1,h2,h3,.serif{ font-family: 'Fraunces', Georgia, serif; font-weight: 500; letter-spacing: -0.01em; }
+  a{ color: var(--accent); }
+  button{ font-family: inherit; cursor: pointer; }
+  .hidden{ display:none !important; }
+
+  /* ---------- Login ---------- */
+  #login-screen{
+    min-height: 100vh; display:flex; align-items:center; justify-content:center;
+    flex-direction:column; gap:18px; text-align:center; padding: 24px;
+  }
+  #login-screen h1{ font-size: 34px; margin: 0; }
+  #login-screen p{ color: var(--ink-soft); max-width: 360px; margin:0; }
+  .btn-google{
+    display:flex; align-items:center; gap:10px; background:var(--surface);
+    border:1px solid var(--border); border-radius: var(--radius); padding: 11px 20px;
+    font-size:14px; font-weight:500; box-shadow: var(--shadow);
+  }
+  #login-error{ color: var(--danger); font-size: 14px; max-width: 360px; }
+
+  /* ---------- Shell ---------- */
+  #app{ max-width: 920px; margin: 0 auto; padding: 20px 20px 80px; }
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 10px 0 22px; gap:12px; flex-wrap: wrap;
+  }
+  .topbar-left{ display:flex; align-items:center; gap:14px; }
+  .brand{ font-family:'Fraunces',serif; font-size:20px; font-weight:500; text-decoration:none; color:var(--ink); }
+  .brand span{ color: var(--accent); }
+  .crumb{ color: var(--ink-faint); font-size: 14px; }
+  .crumb button{ background:none; border:none; color: var(--ink-soft); font-size:14px; padding:0; text-decoration: underline; text-underline-offset:2px; }
+  .topbar-right{ display:flex; align-items:center; gap:10px; }
+  .btn{
+    border:1px solid var(--border); background: var(--surface); border-radius: var(--radius);
+    padding: 8px 14px; font-size: 13.5px; font-weight:500; color:var(--ink); box-shadow: var(--shadow);
+  }
+  .btn:hover{ border-color:#c9cdc4; }
+  .btn-primary{ background: var(--accent); border-color: var(--accent); color:#fff; }
+  .btn-primary:hover{ background:#275c52; }
+  .btn-quiet{ border:none; background:none; box-shadow:none; color:var(--ink-soft); padding:6px 8px; }
+  .btn-sm{ padding:5px 10px; font-size:12.5px; }
+
+  /* ---------- Dashboard ---------- */
+  .dash-head{ display:flex; align-items:flex-end; justify-content:space-between; margin-bottom: 18px; gap: 12px; flex-wrap:wrap; }
+  .dash-head h1{ font-size: 26px; margin:0 0 4px; }
+  .dash-head p{ color:var(--ink-soft); margin:0; font-size: 14px; }
+  .area-grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(220px,1fr)); gap: 14px; }
+  .area-card{
+    background: var(--surface); border:1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 18px; text-align:left; box-shadow: var(--shadow); display:flex; flex-direction:column; gap: 10px;
+  }
+  .area-card:hover{ border-color:#c9cdc4; }
+  .area-card h3{ margin:0; font-size: 19px; }
+  .area-stats{ display:flex; gap: 14px; font-size: 13px; color: var(--ink-soft); }
+  .area-stats b{ color: var(--ink); font-weight:600; }
+  .area-reviewed{ font-size: 12px; color: var(--ink-faint); margin-top:auto; }
+  .dash-actions{ display:flex; justify-content:space-between; align-items:center; margin-top: 26px; }
+
+  /* ---------- Area view ---------- */
+  .area-header{ display:flex; align-items:center; justify-content:space-between; margin-bottom: 18px; flex-wrap:wrap; gap:10px; }
+  .area-header h1{ font-size: 24px; margin:0; }
+  .project-card{
+    background: var(--surface); border:1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 16px 18px; margin-bottom: 12px; box-shadow: var(--shadow);
+  }
+  .project-top{ display:flex; align-items:flex-start; gap:10px; cursor:pointer; }
+  .status-dot{ width:9px; height:9px; border-radius:50%; margin-top:7px; flex-shrink:0; }
+  .status-dot.running{ background: var(--running); }
+  .status-dot.future{ background: var(--future); }
+  .status-dot.someday{ background: var(--someday); }
+  .project-meta{ flex:1; min-width:0; }
+  .project-meta h4{ margin:0 0 3px; font-size: 16px; font-weight:600; }
+  .project-tags{ display:flex; gap:8px; flex-wrap:wrap; font-size:12px; color: var(--ink-soft); }
+  .tag{ background: var(--someday-bg); padding:2px 8px; border-radius:20px; }
+  .tag.linked{ background: var(--running-bg); color: var(--running); font-weight:500; }
+  .chev{ color: var(--ink-faint); font-size: 13px; margin-top: 4px; }
+
+  .project-body{ margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); display:none; }
+  .project-body.open{ display:block; }
+  .action-row{ display:flex; align-items:center; gap:8px; padding: 5px 0; font-size:14px; }
+  .action-row input[type=checkbox]{ width:16px; height:16px; accent-color: var(--accent); flex-shrink:0; }
+  .action-row.done span{ color: var(--ink-faint); text-decoration: line-through; }
+  .quick-add{ display:flex; gap:8px; margin-top: 8px; }
+  .quick-add input{
+    flex:1; border:1px solid var(--border); border-radius: var(--radius); padding: 8px 10px; font-size:14px; font-family:inherit;
+  }
+  .quick-add input:focus{ outline:2px solid var(--accent); outline-offset:1px; }
+  .nudge{ font-size:12.5px; color: var(--future); margin-top:6px; }
+
+  .note-toggle{ font-size:12.5px; color: var(--ink-soft); background:none; border:none; padding:8px 0 0; text-decoration:underline; text-underline-offset:2px; }
+  .note-box{ display:none; margin-top:8px; }
+  .note-box.open{ display:block; }
+  .note-box textarea{
+    width:100%; border:1px dashed var(--border); border-radius: var(--radius); padding:8px 10px;
+    font-family: inherit; font-size:13.5px; resize: vertical; min-height:56px; background:#fbfbf9;
+  }
+
+  .status-select{ border:1px solid var(--border); border-radius:8px; padding:3px 6px; font-size:12px; font-family:inherit; background:var(--surface); }
+
+  /* Presentation mode */
+  body.presenting .presenting-hide{ display:none !important; }
+  .presenting-banner{
+    background: var(--ink); color:#fff; padding:8px 14px; border-radius: var(--radius);
+    display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; font-size:13px;
+  }
+  .presenting-banner button{ background:#fff; color:var(--ink); border:none; border-radius:6px; padding:5px 10px; font-size:12.5px; }
+
+  /* ---------- Weekly review wizard ---------- */
+  .review-shell{ max-width: 560px; margin: 0 auto; }
+  .review-progress{ font-size:13px; color: var(--ink-soft); margin-bottom: 6px; }
+  .progress-bar{ height:4px; background: var(--border); border-radius:2px; margin-bottom:22px; overflow:hidden; }
+  .progress-bar-fill{ height:100%; background: var(--accent); transition: width .25s ease; }
+  .review-card{ background:var(--surface); border:1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; box-shadow: var(--shadow); }
+  .review-card h2{ margin:0 0 4px; font-size:22px; }
+  .review-card .area-label{ font-size:13px; color: var(--ink-faint); margin-bottom:16px; }
+  .field-row{ margin-bottom:16px; }
+  .field-row label{ display:block; font-size:13px; font-weight:500; color: var(--ink-soft); margin-bottom:6px; }
+  .toggle-row{ display:flex; align-items:center; gap:10px; }
+  .field-row select, .field-row input[type=text]{
+    width:100%; border:1px solid var(--border); border-radius: var(--radius); padding:9px 11px; font-size:14px; font-family:inherit;
+  }
+  .existing-actions{ font-size:13px; color: var(--ink-soft); margin-bottom:6px; }
+  .existing-actions li{ margin-bottom:2px; }
+  .review-nav{ display:flex; justify-content:space-between; margin-top: 20px; }
+  .review-landing, .review-final{ text-align:center; padding: 40px 20px; }
+  .review-landing h2{ font-size:24px; }
+  .priority-pick{ text-align:left; max-width:480px; margin: 20px auto; }
+  .priority-pick label{ display:flex; gap:10px; align-items:flex-start; padding:8px 0; font-size:14px; border-bottom:1px solid var(--border); }
+  .priority-pick input{ margin-top:3px; }
+  .copy-block{
+    background:#fbfbf9; border:1px dashed var(--border); border-radius: var(--radius); padding:16px;
+    text-align:left; white-space:pre-wrap; font-family: 'SF Mono', 'Menlo', monospace; font-size:13px; margin: 16px 0;
+  }
+
+  /* ---------- Export / Import modal ---------- */
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(28,35,32,0.4); display:flex; align-items:center; justify-content:center;
+    padding: 20px; z-index: 50;
+  }
+  .modal{ background:var(--surface); border-radius: var(--radius-lg); padding:24px; max-width:520px; width:100%; max-height:85vh; overflow-y:auto; }
+  .modal h3{ margin:0 0 14px; font-size:19px; }
+  .modal-check{ display:flex; align-items:center; gap:8px; font-size:14px; margin-bottom:18px; }
+  .modal-actions{ display:flex; justify-content:flex-end; gap:10px; margin-top:18px; }
+  .diff-summary{ display:flex; gap:16px; flex-wrap:wrap; margin-bottom:14px; font-size:13.5px; }
+  .diff-summary b{ display:block; font-size:20px; }
+  .diff-detail{ font-size:13px; border-top:1px solid var(--border); padding-top:10px; max-height:220px; overflow-y:auto; }
+  .diff-detail div{ padding:3px 0; color: var(--ink-soft); }
+  .diff-detail .create{ color: var(--running); }
+  .diff-detail .delete{ color: var(--danger); }
+
+  #toast-container{ position:fixed; bottom:20px; left:50%; transform:translateX(-50%); z-index:100; display:flex; flex-direction:column; gap:8px; align-items:center; }
+  .toast{ background: var(--ink); color:#fff; padding:9px 16px; border-radius: 20px; font-size:13.5px; box-shadow: var(--shadow); }
+
+  @media (max-width:480px){
+    #app{ padding: 14px 14px 70px; }
+    .review-card{ padding:18px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="login-screen">
+  <h1>CORE</h1>
+  <p>Capture → Organize → Review → Engage. Helicopter view mingguan untuk semua Area kehidupan.</p>
+  <button class="btn-google" id="btn-google-login">Masuk dengan Google</button>
+  <div id="login-error"></div>
+</div>
+
+<div id="app" class="hidden">
+  <div class="topbar">
+    <div class="topbar-left">
+      <a class="brand" href="/">dhasi<span>.core</span></a>
+      <span class="crumb" id="crumb"></span>
+    </div>
+    <div class="topbar-right" id="topbar-right"></div>
+  </div>
+  <main id="view-root"></main>
+</div>
+
+<div id="toast-container"></div>
+
+<script>
+/* ============================================================
+   CONFIG — sesuaikan sebelum deploy
+   ============================================================ */
+const SUPABASE_URL = 'https://bnpqmdeutwnwmfxnqzyt.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJucHFtZGV1dHdud21meG5xenl0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3Mzg5NzIsImV4cCI6MjA5NzMxNDk3Mn0.lccgDePQ5eFffJGvwLifUMQNKl31vfwoHQZ5y1Q1JT0'; // sama seperti di /project — project Supabase sama
+const ALLOWED_EMAILS = ['danielsidabutar.11@gmail.com']; // sama whitelist seperti /project
+
+const MAX_NEXT_ACTIONS = 3;
+
+const { createClient } = window.supabase;
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: { flowType: 'implicit' } // konsisten dengan /project
+});
+
+/* ============================================================
+   STATE
+   ============================================================ */
+const state = {
+  user: null,
+  view: 'dashboard',      // dashboard | area | review
+  currentAreaId: null,
+  presenting: false,
+  areas: [],
+  areaDetail: null,       // { area, projects:[{...,next_actions:[]}] }
+  reviewQueue: [],
+  reviewIndex: 0,
+  reviewSession: {},      // projectId -> { actionsAdded: [text,...] }
+};
+
+/* ============================================================
+   AUTH
+   ============================================================ */
+document.getElementById('btn-google-login').addEventListener('click', async () => {
+  document.getElementById('login-error').textContent = '';
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: 'https://dhasi.my.id/core',
+      queryParams: { access_type: 'offline', prompt: 'consent' }
+    }
+  });
+  if (error) document.getElementById('login-error').textContent = 'Login gagal: ' + error.message;
+});
+
+async function initAuth(){
+  const { data: { session } } = await supabase.auth.getSession();
+  await handleSession(session);
+  supabase.auth.onAuthStateChange(async (_event, session) => {
+    await handleSession(session);
+  });
+}
+
+async function handleSession(session){
+  if(!session){
+    showLogin();
+    return;
+  }
+  const email = session.user.email;
+  if(!ALLOWED_EMAILS.includes(email)){
+    document.getElementById('login-error').textContent = `Akun ${email} tidak diizinkan mengakses CORE.`;
+    await supabase.auth.signOut();
+    showLogin();
+    return;
+  }
+  state.user = session.user;
+  showApp();
+  await loadDashboard();
+}
+
+function showLogin(){
+  document.getElementById('login-screen').classList.remove('hidden');
+  document.getElementById('app').classList.add('hidden');
+}
+function showApp(){
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+}
+
+async function logout(){
+  await supabase.auth.signOut();
+}
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+function toast(msg){
+  const c = document.getElementById('toast-container');
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = msg;
+  c.appendChild(el);
+  setTimeout(() => el.remove(), 2600);
+}
+
+/* ============================================================
+   TOPBAR / CRUMB RENDER
+   ============================================================ */
+function renderTopbar(){
+  const crumb = document.getElementById('crumb');
+  const right = document.getElementById('topbar-right');
+  if(state.view === 'dashboard'){
+    crumb.textContent = '';
+  } else if(state.view === 'area'){
+    crumb.innerHTML = `<button onclick="goDashboard()">CORE</button> / ${escapeHtml(state.areaDetail?.area?.name || '')}`;
+  } else if(state.view === 'review'){
+    crumb.innerHTML = `<button onclick="goDashboard()">CORE</button> / Weekly Review`;
+  }
+
+  let rightHtml = '';
+  if(state.view === 'area'){
+    rightHtml += `<button class="btn btn-sm presenting-hide" onclick="togglePresenting()">${state.presenting ? 'Keluar mode presentasi' : 'Mode Presentasi'}</button>`;
+  }
+  rightHtml += `<button class="btn btn-quiet btn-sm presenting-hide" onclick="logout()">Keluar</button>`;
+  right.innerHTML = rightHtml;
+
+  document.body.classList.toggle('presenting', state.presenting);
+}
+
+function goDashboard(){
+  state.view = 'dashboard';
+  state.presenting = false;
+  loadDashboard();
+}
+
+/* ============================================================
+   DASHBOARD
+   ============================================================ */
+async function loadDashboard(){
+  state.view = 'dashboard';
+  const { data: areas, error } = await supabase
+    .from('core_areas')
+    .select('*')
+    .order('sort_order');
+  if(error){ toast('Gagal memuat area: ' + error.message); return; }
+
+  const { data: projects } = await supabase
+    .from('core_projects')
+    .select('id, area_id, status, last_reviewed_at');
+  const { data: actions } = await supabase
+    .from('core_next_actions')
+    .select('id, project_id, is_done');
+
+  const projById = {};
+  (projects||[]).forEach(p => projById[p.id] = p);
+
+  state.areas = (areas||[]).map(area => {
+    const areaProjects = (projects||[]).filter(p => p.area_id === area.id);
+    const runningCount = areaProjects.filter(p => p.status === 'running').length;
+    const openActions = (actions||[]).filter(a => {
+      const p = projById[a.project_id];
+      return p && p.area_id === area.id && !a.is_done;
+    }).length;
+    const reviewedDates = areaProjects.map(p => p.last_reviewed_at).filter(Boolean).sort();
+    const lastReviewed = reviewedDates.length ? reviewedDates[reviewedDates.length-1] : null;
+    return { ...area, runningCount, openActions, lastReviewed };
+  });
+
+  renderDashboard();
+}
+
+function renderDashboard(){
+  renderTopbar();
+  const root = document.getElementById('view-root');
+  root.innerHTML = `
+    <div class="dash-head">
+      <div>
+        <h1>CORE</h1>
+        <p>Helicopter view semua Area. Klik card untuk capture &amp; lihat detail.</p>
+      </div>
+    </div>
+    <div class="area-grid">
+      ${state.areas.map(a => `
+        <button class="area-card" onclick="openArea('${a.id}')">
+          <h3>${escapeHtml(a.name)}</h3>
+          <div class="area-stats">
+            <span><b>${a.runningCount}</b> running</span>
+            <span><b>${a.openActions}</b> next action</span>
+          </div>
+          <div class="area-reviewed">${a.lastReviewed ? 'Direview ' + relativeDate(a.lastReviewed) : 'Belum pernah direview'}</div>
+        </button>
+      `).join('')}
+    </div>
+    <div class="dash-actions">
+      <button class="btn btn-primary" onclick="startReview()">Mulai Weekly Review</button>
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-sm" onclick="openImportModal()">Import</button>
+        <button class="btn btn-sm" onclick="openExportModal()">Export</button>
+      </div>
+    </div>
+  `;
+}
+
+/* ============================================================
+   AREA VIEW
+   ============================================================ */
+async function openArea(areaId){
+  state.view = 'area';
+  state.currentAreaId = areaId;
+  await loadAreaDetail(areaId);
+}
+
+async function loadAreaDetail(areaId){
+  const { data: area } = await supabase.from('core_areas').select('*').eq('id', areaId).single();
+  const { data: projects } = await supabase
+    .from('core_projects').select('*').eq('area_id', areaId).order('created_at');
+  const projectIds = (projects||[]).map(p => p.id);
+  let actions = [];
+  if(projectIds.length){
+    const { data: a } = await supabase
+      .from('core_next_actions').select('*').in('project_id', projectIds).order('created_at');
+    actions = a || [];
+  }
+  state.areaDetail = {
+    area,
+    projects: (projects||[]).map(p => ({ ...p, next_actions: actions.filter(a => a.project_id === p.id), _open: false, _noteOpen: false }))
+  };
+  renderArea();
+}
+
+function renderArea(){
+  renderTopbar();
+  const root = document.getElementById('view-root');
+  const d = state.areaDetail;
+  root.innerHTML = `
+    <div class="presenting-banner presenting-only hidden" id="presenting-banner">
+      Mode Presentasi aktif — hanya Area ini yang tampil.
+      <button onclick="togglePresenting()">Keluar mode presentasi</button>
+    </div>
+    <div class="area-header presenting-hide">
+      <h1>${escapeHtml(d.area.name)}</h1>
+    </div>
+    <div id="presenting-banner-slot"></div>
+    <div id="project-list">
+      ${d.projects.map(p => renderProjectCard(p)).join('')}
+    </div>
+  `;
+  document.getElementById('presenting-banner').classList.toggle('hidden', !state.presenting);
+  document.getElementById('presenting-banner').classList.toggle('presenting-hide', false);
+}
+
+function renderProjectCard(p){
+  const showMeta = p.divisi || p.delegasi_owner;
+  const capped = p.next_actions.slice(0, MAX_NEXT_ACTIONS);
+  // private_note: kalau presenting mode aktif, elemen note SAMA SEKALI tidak dirender ke DOM
+  const noteBlock = state.presenting ? '' : `
+    <button class="note-toggle" onclick="toggleNote('${p.id}')">${p._noteOpen ? 'Sembunyikan' : 'Catatan pribadi'}${p.private_note ? ' •' : ''}</button>
+    <div class="note-box ${p._noteOpen ? 'open' : ''}" id="note-box-${p.id}">
+      <textarea placeholder="Catatan pribadi, tidak team-facing..." onblur="saveNote('${p.id}', this.value)">${escapeHtml(p.private_note || '')}</textarea>
+    </div>
+  `;
+  return `
+    <div class="project-card">
+      <div class="project-top" onclick="toggleProject('${p.id}')">
+        <div class="status-dot ${p.status}"></div>
+        <div class="project-meta">
+          <h4>${escapeHtml(p.name)}</h4>
+          ${showMeta ? `<div class="project-tags">
+            ${p.divisi ? `<span class="tag">${escapeHtml(p.divisi)}</span>` : ''}
+            ${p.delegasi_owner ? `<span class="tag">${escapeHtml(p.delegasi_owner)}</span>` : ''}
+            ${p.linked_project_url ? `<a class="tag linked" href="${escapeAttr(p.linked_project_url)}" onclick="event.stopPropagation()">Detail di /project →</a>` : ''}
+          </div>` : (p.linked_project_url ? `<div class="project-tags"><a class="tag linked" href="${escapeAttr(p.linked_project_url)}" onclick="event.stopPropagation()">Detail di /project →</a></div>` : '')}
+        </div>
+        <div class="chev">${p._open ? '▲' : '▼'}</div>
+      </div>
+      <div class="project-body ${p._open ? 'open' : ''}" id="body-${p.id}">
+        ${capped.map(a => `
+          <div class="action-row ${a.is_done ? 'done' : ''}">
+            <input type="checkbox" ${a.is_done ? 'checked' : ''} onchange="toggleAction('${a.id}', this.checked)">
+            <span>${escapeHtml(a.text)}</span>
+          </div>
+        `).join('') || '<div class="action-row"><span style="color:var(--ink-faint)">Belum ada next action.</span></div>'}
+        <div class="quick-add">
+          <input type="text" placeholder="Tambah next action, Enter untuk simpan..." onkeydown="if(event.key==='Enter'){quickAdd('${p.id}', this)}">
+        </div>
+        ${p.next_actions.length >= MAX_NEXT_ACTIONS ? `<div class="nudge">Sudah ${p.next_actions.length} next action — fokusin dulu, selesaikan salah satu baru tambah lagi.</div>` : ''}
+        <div style="margin-top:10px; display:flex; align-items:center; gap:10px;">
+          <label style="font-size:12.5px; color:var(--ink-soft)">Status:
+            <select class="status-select" onchange="changeStatus('${p.id}', this.value)">
+              <option value="running" ${p.status==='running'?'selected':''}>Running</option>
+              <option value="future" ${p.status==='future'?'selected':''}>Future</option>
+              <option value="someday" ${p.status==='someday'?'selected':''}>Someday</option>
+            </select>
+          </label>
+        </div>
+        ${noteBlock}
+      </div>
+    </div>
+  `;
+}
+
+function toggleProject(id){
+  const p = state.areaDetail.projects.find(x => x.id === id);
+  p._open = !p._open;
+  renderArea();
+}
+function toggleNote(id){
+  const p = state.areaDetail.projects.find(x => x.id === id);
+  p._noteOpen = !p._noteOpen;
+  renderArea();
+}
+function togglePresenting(){
+  state.presenting = !state.presenting;
+  renderArea();
+}
+
+async function quickAdd(projectId, inputEl){
+  const text = inputEl.value.trim();
+  if(!text) return;
+  const { data, error } = await supabase
+    .from('core_next_actions')
+    .insert({ project_id: projectId, text })
+    .select().single();
+  if(error){ toast('Gagal menambah: ' + error.message); return; }
+  const p = state.areaDetail.projects.find(x => x.id === projectId);
+  p.next_actions.push(data);
+  p._open = true;
+  renderArea();
+}
+
+async function toggleAction(actionId, isDone){
+  const { error } = await supabase.from('core_next_actions').update({ is_done: isDone }).eq('id', actionId);
+  if(error){ toast('Gagal update: ' + error.message); return; }
+  for(const p of state.areaDetail.projects){
+    const a = p.next_actions.find(x => x.id === actionId);
+    if(a) a.is_done = isDone;
+  }
+  renderArea();
+}
+
+async function changeStatus(projectId, status){
+  const { error } = await supabase.from('core_projects').update({ status }).eq('id', projectId);
+  if(error){ toast('Gagal update status: ' + error.message); return; }
+  const p = state.areaDetail.projects.find(x => x.id === projectId);
+  p.status = status;
+  renderArea();
+}
+
+let noteSaveTimers = {};
+function saveNote(projectId, value){
+  clearTimeout(noteSaveTimers[projectId]);
+  noteSaveTimers[projectId] = setTimeout(async () => {
+    const { error } = await supabase.from('core_projects').update({ private_note: value }).eq('id', projectId);
+    if(error){ toast('Gagal simpan catatan: ' + error.message); return; }
+    const p = state.areaDetail.projects.find(x => x.id === projectId);
+    p.private_note = value;
+    toast('Catatan disimpan');
+  }, 400);
+}
+
+/* ============================================================
+   WEEKLY REVIEW WIZARD
+   ============================================================ */
+async function startReview(){
+  const { data: projects } = await supabase
+    .from('core_projects')
+    .select('*, core_areas(name)')
+    .in('status', ['running','future'])
+    .order('area_id');
+  state.reviewQueue = projects || [];
+  state.reviewIndex = -1; // -1 = landing screen
+  state.reviewSession = {};
+  state.view = 'review';
+  renderReview();
+}
+
+function renderReview(){
+  renderTopbar();
+  const root = document.getElementById('view-root');
+
+  if(state.reviewIndex === -1){
+    root.innerHTML = `
+      <div class="review-shell">
+        <div class="review-landing">
+          <h2>${state.reviewQueue.length} project akan direview minggu ini</h2>
+          <p style="color:var(--ink-soft)">Project dengan status Running / Future. Someday dilewati otomatis.</p>
+          <button class="btn btn-primary" onclick="advanceReview()">Mulai</button>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  if(state.reviewIndex >= state.reviewQueue.length){
+    renderReviewFinal();
+    return;
+  }
+
+  const p = state.reviewQueue[state.reviewIndex];
+  const pct = Math.round(((state.reviewIndex) / state.reviewQueue.length) * 100);
+  root.innerHTML = `
+    <div class="review-shell">
+      <div class="review-progress">Project ${state.reviewIndex+1} dari ${state.reviewQueue.length}</div>
+      <div class="progress-bar"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+      <div class="review-card">
+        <div class="area-label">${escapeHtml(p.core_areas?.name || '')}</div>
+        <h2>${escapeHtml(p.name)}</h2>
+
+        <div class="field-row toggle-row">
+          <label style="margin:0;"><input type="checkbox" id="rv-relevant" checked onchange="onRelevantToggle()"> Masih relevan?</label>
+        </div>
+
+        <div class="field-row" id="rv-status-row">
+          <label>Update status</label>
+          <select id="rv-status">
+            <option value="running" ${p.status==='running'?'selected':''}>Running</option>
+            <option value="future" ${p.status==='future'?'selected':''}>Future</option>
+            <option value="someday" ${p.status==='someday'?'selected':''}>Someday</option>
+          </select>
+        </div>
+
+        ${p._next_actions_cache && p._next_actions_cache.length ? `
+        <div class="field-row">
+          <label>Next action terakhir</label>
+          <ul class="existing-actions">${p._next_actions_cache.map(a=>`<li>${a.is_done?'✓ ':''}${escapeHtml(a.text)}</li>`).join('')}</ul>
+        </div>` : ''}
+
+        <div class="field-row">
+          <label>Next action minggu ini (tambah baru)</label>
+          <input type="text" id="rv-next-action" placeholder="Tulis next action baru...">
+        </div>
+
+        <div class="review-nav">
+          <button class="btn" onclick="skipReview()">Lewati</button>
+          <button class="btn btn-primary" onclick="advanceReview()">Lanjut</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // preload existing actions for display (best-effort, cached once)
+  if(!p._next_actions_cache){
+    supabase.from('core_next_actions').select('*').eq('project_id', p.id).order('created_at')
+      .then(({data}) => { p._next_actions_cache = data || []; renderReview(); });
+  }
+}
+
+function onRelevantToggle(){
+  const rel = document.getElementById('rv-relevant').checked;
+  document.getElementById('rv-status-row').style.opacity = rel ? '1' : '0.5';
+  if(!rel) document.getElementById('rv-status').value = 'someday';
+}
+
+async function advanceReview(){
+  if(state.reviewIndex === -1){ state.reviewIndex = 0; renderReview(); return; }
+
+  const p = state.reviewQueue[state.reviewIndex];
+  const statusEl = document.getElementById('rv-status');
+  const newAction = document.getElementById('rv-next-action')?.value.trim();
+  const newStatus = statusEl ? statusEl.value : p.status;
+
+  const { error } = await supabase.from('core_projects')
+    .update({ status: newStatus, last_reviewed_at: new Date().toISOString() })
+    .eq('id', p.id);
+  if(error){ toast('Gagal simpan review: ' + error.message); }
+
+  if(newAction){
+    const { data } = await supabase.from('core_next_actions').insert({ project_id: p.id, text: newAction }).select().single();
+    if(data){
+      state.reviewSession[p.id] = state.reviewSession[p.id] || { projectName: p.name, areaName: p.core_areas?.name, actions: [] };
+      state.reviewSession[p.id].actions.push(data);
+    }
+  }
+
+  state.reviewIndex++;
+  renderReview();
+}
+
+function skipReview(){
+  state.reviewIndex++;
+  renderReview();
+}
+
+function renderReviewFinal(){
+  const root = document.getElementById('view-root');
+  const allNewActions = [];
+  Object.values(state.reviewSession).forEach(s => {
+    s.actions.forEach(a => allNewActions.push({ id: a.id, text: a.text, projectName: s.projectName, areaName: s.areaName }));
+  });
+
+  if(!allNewActions.length){
+    root.innerHTML = `
+      <div class="review-shell"><div class="review-final">
+        <h2>Review selesai</h2>
+        <p style="color:var(--ink-soft)">Tidak ada next action baru untuk dipilih jadi prioritas.</p>
+        <button class="btn btn-primary" onclick="goDashboard()">Kembali ke Dashboard</button>
+      </div></div>`;
+    return;
+  }
+
+  root.innerHTML = `
+    <div class="review-shell">
+      <div class="review-final">
+        <h2>Pilih 3–5 Prioritas Minggu Ini</h2>
+        <p style="color:var(--ink-soft)">Dari next action yang baru diisi barusan.</p>
+      </div>
+      <div class="priority-pick" id="priority-pick">
+        ${allNewActions.map((a,i) => `
+          <label>
+            <input type="checkbox" value="${i}" class="priority-checkbox">
+            <span><b>${escapeHtml(a.projectName)}</b> (${escapeHtml(a.areaName||'')}) — ${escapeHtml(a.text)}</span>
+          </label>
+        `).join('')}
+      </div>
+      <div style="text-align:center; margin-top:16px;">
+        <button class="btn btn-primary" onclick='finishReview(${JSON.stringify(allNewActions).replace(/'/g,"&#39;")})'>Simpan Prioritas</button>
+      </div>
+    </div>
+  `;
+}
+
+async function finishReview(allNewActions){
+  const checked = Array.from(document.querySelectorAll('.priority-checkbox:checked')).map(el => allNewActions[parseInt(el.value)]);
+  if(checked.length === 0){ toast('Pilih minimal 1 prioritas'); return; }
+  if(checked.length > 5){ toast('Maksimal 5 prioritas'); return; }
+
+  const weekStart = getWeekStart(new Date());
+  const { error } = await supabase.from('core_weekly_reviews').insert({
+    week_start_date: weekStart,
+    priorities: checked,
+    completed_at: new Date().toISOString()
+  });
+  if(error){ toast('Gagal simpan: ' + error.message); return; }
+
+  const root = document.getElementById('view-root');
+  const copyText = checked.map(a => `- [${a.areaName}] ${a.projectName}: ${a.text}`).join('\n');
+  root.innerHTML = `
+    <div class="review-shell">
+      <div class="review-final">
+        <h2>Prioritas Tersimpan</h2>
+        <p style="color:var(--ink-soft)">Copy ke Google Calendar secara manual.</p>
+        <div class="copy-block" id="copy-block">${escapeHtml(copyText)}</div>
+        <button class="btn" onclick="copyPriorities()">Copy ke clipboard</button>
+        <div style="margin-top:20px;">
+          <button class="btn btn-primary" onclick="goDashboard()">Selesai — Kembali ke Dashboard</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function copyPriorities(){
+  const text = document.getElementById('copy-block').textContent;
+  navigator.clipboard.writeText(text).then(() => toast('Tersalin ke clipboard'));
+}
+
+function getWeekStart(d){
+  const date = new Date(d);
+  const day = date.getDay();
+  const diff = date.getDate() - day + (day === 0 ? -6 : 1); // Monday
+  const monday = new Date(date.setDate(diff));
+  return monday.toISOString().slice(0,10);
+}
+
+/* ============================================================
+   EXPORT
+   ============================================================ */
+function openExportModal(){
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'export-modal';
+  overlay.innerHTML = `
+    <div class="modal">
+      <h3>Export data CORE</h3>
+      <div class="modal-check">
+        <input type="checkbox" id="export-include-notes">
+        <label for="export-include-notes">Sertakan catatan pribadi</label>
+      </div>
+      <p style="font-size:13px; color:var(--ink-soft)">Download file JSON berisi seluruh Area → Project → Next Action, untuk didiskusikan dengan Claude.</p>
+      <div class="modal-actions">
+        <button class="btn" onclick="closeModal('export-modal')">Batal</button>
+        <button class="btn btn-primary" onclick="doExport()">Download</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+}
+
+function closeModal(id){
+  document.getElementById(id)?.remove();
+}
+
+async function doExport(){
+  const includeNotes = document.getElementById('export-include-notes').checked;
+  const { data: areas } = await supabase.from('core_areas').select('*').order('sort_order');
+  const { data: projects } = await supabase.from('core_projects').select('*');
+  const { data: actions } = await supabase.from('core_next_actions').select('*');
+
+  const payload = {
+    exported_at: new Date().toISOString(),
+    areas: (areas||[]).map(area => ({
+      id: area.id,
+      name: area.name,
+      projects: (projects||[]).filter(p => p.area_id === area.id).map(p => {
+        const obj = {
+          id: p.id,
+          name: p.name,
+          status: p.status,
+          divisi: p.divisi,
+          delegasi_owner: p.delegasi_owner,
+          linked_project_url: p.linked_project_url,
+          next_actions: (actions||[]).filter(a => a.project_id === p.id).map(a => ({
+            id: a.id, text: a.text, is_done: a.is_done
+          }))
+        };
+        if(includeNotes) obj.private_note = p.private_note || '';
+        return obj;
+      })
+    }))
+  };
+
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `core-export-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  closeModal('export-modal');
+  toast('File terdownload');
+}
+
+/* ============================================================
+   IMPORT
+   ============================================================ */
+function openImportModal(){
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'import-modal';
+  overlay.innerHTML = `
+    <div class="modal">
+      <h3>Import data CORE</h3>
+      <input type="file" id="import-file" accept="application/json">
+      <div id="import-body" style="margin-top:16px;"></div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  document.getElementById('import-file').addEventListener('change', handleImportFile);
+}
+
+let pendingImport = null;
+
+async function handleImportFile(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const text = await file.text();
+  let json;
+  try{ json = JSON.parse(text); } catch(err){ toast('File JSON tidak valid'); return; }
+
+  const { data: currentAreas } = await supabase.from('core_areas').select('*');
+  const { data: currentProjects } = await supabase.from('core_projects').select('*');
+  const { data: currentActions } = await supabase.from('core_next_actions').select('*');
+
+  const diff = computeDiff(json, currentAreas||[], currentProjects||[], currentActions||[]);
+  pendingImport = { json, diff };
+  renderImportPreview(diff);
+}
+
+function computeDiff(json, currentAreas, currentProjects, currentActions){
+  const diff = { newAreas:[], newProjects:[], updatedProjects:[], deletedProjects:[], newActions:[], doneActions:[], deletedActions:[] };
+  const projById = {}; currentProjects.forEach(p => projById[p.id]=p);
+  const actById = {}; currentActions.forEach(a => actById[a.id]=a);
+
+  (json.areas||[]).forEach(area => {
+    if(!area.id){ diff.newAreas.push(area.name); }
+    (area.projects||[]).forEach(p => {
+      const act = p._action || (p.id ? 'update' : 'create');
+      if(act === 'create'){
+        diff.newProjects.push(p.name);
+      } else if(act === 'delete'){
+        diff.deletedProjects.push(p.name);
+      } else if(act === 'update' && p.id && projById[p.id]){
+        const existing = projById[p.id];
+        if(existing.status !== p.status || existing.name !== p.name){
+          diff.updatedProjects.push(p.name);
+        }
+      }
+      (p.next_actions||[]).forEach(a => {
+        const aAct = a._action || (a.id ? 'update' : 'create');
+        if(aAct === 'create'){
+          diff.newActions.push(a.text);
+        } else if(aAct === 'delete'){
+          diff.deletedActions.push(a.text);
+        } else if(aAct === 'update' && a.id && actById[a.id] && actById[a.id].is_done !== a.is_done){
+          diff.doneActions.push(a.text);
+        }
+      });
+    });
+  });
+  return diff;
+}
+
+function renderImportPreview(diff){
+  const body = document.getElementById('import-body');
+  body.innerHTML = `
+    <div class="diff-summary">
+      <div><b>${diff.newProjects.length}</b>project baru</div>
+      <div><b>${diff.updatedProjects.length}</b>project berubah</div>
+      <div><b>${diff.newActions.length}</b>next action baru</div>
+      <div><b>${diff.deletedProjects.length + diff.deletedActions.length}</b>akan dihapus</div>
+    </div>
+    <div class="diff-detail">
+      ${diff.newProjects.map(n=>`<div class="create">+ project: ${escapeHtml(n)}</div>`).join('')}
+      ${diff.updatedProjects.map(n=>`<div>~ update project: ${escapeHtml(n)}</div>`).join('')}
+      ${diff.newActions.map(n=>`<div class="create">+ next action: ${escapeHtml(n)}</div>`).join('')}
+      ${diff.doneActions.map(n=>`<div>~ status done berubah: ${escapeHtml(n)}</div>`).join('')}
+      ${diff.deletedProjects.map(n=>`<div class="delete">− hapus project: ${escapeHtml(n)}</div>`).join('')}
+      ${diff.deletedActions.map(n=>`<div class="delete">− hapus next action: ${escapeHtml(n)}</div>`).join('')}
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('import-modal')">Batal</button>
+      <button class="btn btn-primary" onclick="applyImport()">Terapkan Perubahan</button>
+    </div>
+  `;
+}
+
+async function applyImport(){
+  if(!pendingImport) return;
+  const { json } = pendingImport;
+
+  for(const area of (json.areas||[])){
+    let areaId = area.id;
+    if(!areaId){
+      const { data } = await supabase.from('core_areas').insert({ name: area.name }).select().single();
+      areaId = data.id;
+    }
+    for(const p of (area.projects||[])){
+      const act = p._action || (p.id ? 'update' : 'create');
+      let projectId = p.id;
+
+      if(act === 'delete' && p.id){
+        await supabase.from('core_projects').delete().eq('id', p.id);
+        continue;
+      }
+      if(act === 'create'){
+        const insertObj = { area_id: areaId, name: p.name, status: p.status || 'running', divisi: p.divisi, delegasi_owner: p.delegasi_owner, linked_project_url: p.linked_project_url };
+        if('private_note' in p) insertObj.private_note = p.private_note;
+        const { data } = await supabase.from('core_projects').insert(insertObj).select().single();
+        projectId = data.id;
+      } else if(act === 'update' && p.id){
+        const updateObj = { name: p.name, status: p.status, divisi: p.divisi, delegasi_owner: p.delegasi_owner, linked_project_url: p.linked_project_url };
+        if('private_note' in p) updateObj.private_note = p.private_note;
+        await supabase.from('core_projects').update(updateObj).eq('id', p.id);
+      }
+
+      for(const a of (p.next_actions||[])){
+        const aAct = a._action || (a.id ? 'update' : 'create');
+        if(aAct === 'delete' && a.id){
+          await supabase.from('core_next_actions').delete().eq('id', a.id);
+        } else if(aAct === 'create'){
+          await supabase.from('core_next_actions').insert({ project_id: projectId, text: a.text, is_done: a.is_done || false });
+        } else if(aAct === 'update' && a.id){
+          await supabase.from('core_next_actions').update({ text: a.text, is_done: a.is_done }).eq('id', a.id);
+        }
+      }
+    }
+  }
+
+  closeModal('import-modal');
+  toast('Import diterapkan');
+  pendingImport = null;
+  if(state.view === 'dashboard') loadDashboard();
+  else if(state.view === 'area') loadAreaDetail(state.currentAreaId);
+}
+
+/* ============================================================
+   UTILS
+   ============================================================ */
+function escapeHtml(s){
+  if(s === null || s === undefined) return '';
+  return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+function escapeAttr(s){ return escapeHtml(s); }
+function relativeDate(iso){
+  const d = new Date(iso);
+  const diffDays = Math.floor((Date.now() - d.getTime()) / 86400000);
+  if(diffDays <= 0) return 'hari ini';
+  if(diffDays === 1) return 'kemarin';
+  if(diffDays < 7) return diffDays + ' hari lalu';
+  if(diffDays < 30) return Math.floor(diffDays/7) + ' minggu lalu';
+  return d.toLocaleDateString('id-ID', { day:'numeric', month:'short' });
+}
+
+// Expose the import trigger on the dashboard's export button area too
+document.addEventListener('keydown', (e) => {
+  if(e.key === 'Escape'){
+    document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
+  }
+});
+
+initAuth();
+</script>
+</body>
+</html>
