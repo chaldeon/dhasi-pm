@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
 <style>
   :root{
     --bg: #f5f6f3;
@@ -202,6 +202,7 @@
   <h1>CORE</h1>
   <p>Mengalihkan ke halaman login...</p>
   <div id="login-error"></div>
+  <a class="btn-google" href="/project?redirect_to=/core">Ke halaman login →</a>
 </div>
 
 <div id="app" class="hidden">
@@ -227,10 +228,15 @@ const ALLOWED_EMAILS = ['danielsidabutar.11@gmail.com']; // sama whitelist seper
 
 const MAX_NEXT_ACTIONS = 3;
 
-const { createClient } = window.supabase;
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: { flowType: 'implicit' } // konsisten dengan /project
-});
+let sb;
+try{
+  const { createClient } = window.supabase;
+  sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { flowType: 'implicit' } // konsisten dengan /project
+  });
+}catch(e){
+  document.getElementById('login-error').textContent = 'Gagal load Supabase: ' + e.message + ' — coba refresh, atau klik link login manual di bawah.';
+}
 
 /* ============================================================
    STATE
@@ -256,9 +262,9 @@ const state = {
    ============================================================ */
 
 async function initAuth(){
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { session } } = await sb.auth.getSession();
   await handleSession(session);
-  supabase.auth.onAuthStateChange(async (_event, session) => {
+  sb.auth.onAuthStateChange(async (_event, session) => {
     await handleSession(session);
   });
 }
@@ -270,7 +276,7 @@ async function handleSession(session){
   }
   const email = session.user.email;
   if(!ALLOWED_EMAILS.includes(email)){
-    await supabase.auth.signOut();
+    await sb.auth.signOut();
     goToProjectLogin();
     return;
   }
@@ -292,7 +298,7 @@ function showApp(){
 }
 
 async function logout(){
-  await supabase.auth.signOut();
+  await sb.auth.signOut();
 }
 
 /* ============================================================
@@ -415,7 +421,7 @@ async function openArea(areaId){
 }
 
 async function loadAreaDetail(areaId){
-  const { data: area } = await supabase.from('core_areas').select('*').eq('id', areaId).single();
+  const { data: area } = await sb.from('core_areas').select('*').eq('id', areaId).single();
   const { data: projects } = await supabase
     .from('core_projects').select('*').eq('area_id', areaId).order('created_at');
   const projectIds = (projects||[]).map(p => p.id);
@@ -533,7 +539,7 @@ async function quickAdd(projectId, inputEl){
 }
 
 async function toggleAction(actionId, isDone){
-  const { error } = await supabase.from('core_next_actions').update({ is_done: isDone }).eq('id', actionId);
+  const { error } = await sb.from('core_next_actions').update({ is_done: isDone }).eq('id', actionId);
   if(error){ toast('Gagal update: ' + error.message); return; }
   for(const p of state.areaDetail.projects){
     const a = p.next_actions.find(x => x.id === actionId);
@@ -543,7 +549,7 @@ async function toggleAction(actionId, isDone){
 }
 
 async function changeStatus(projectId, status){
-  const { error } = await supabase.from('core_projects').update({ status }).eq('id', projectId);
+  const { error } = await sb.from('core_projects').update({ status }).eq('id', projectId);
   if(error){ toast('Gagal update status: ' + error.message); return; }
   const p = state.areaDetail.projects.find(x => x.id === projectId);
   p.status = status;
@@ -554,7 +560,7 @@ let noteSaveTimers = {};
 function saveNote(projectId, value){
   clearTimeout(noteSaveTimers[projectId]);
   noteSaveTimers[projectId] = setTimeout(async () => {
-    const { error } = await supabase.from('core_projects').update({ private_note: value }).eq('id', projectId);
+    const { error } = await sb.from('core_projects').update({ private_note: value }).eq('id', projectId);
     if(error){ toast('Gagal simpan catatan: ' + error.message); return; }
     const p = state.areaDetail.projects.find(x => x.id === projectId);
     p.private_note = value;
@@ -644,7 +650,7 @@ function renderReview(){
 
   // preload existing actions for display (best-effort, cached once)
   if(!p._next_actions_cache){
-    supabase.from('core_next_actions').select('*').eq('project_id', p.id).order('created_at')
+    sb.from('core_next_actions').select('*').eq('project_id', p.id).order('created_at')
       .then(({data}) => { p._next_actions_cache = data || []; renderReview(); });
   }
 }
@@ -663,13 +669,13 @@ async function advanceReview(){
   const newAction = document.getElementById('rv-next-action')?.value.trim();
   const newStatus = statusEl ? statusEl.value : p.status;
 
-  const { error } = await supabase.from('core_projects')
+  const { error } = await sb.from('core_projects')
     .update({ status: newStatus, last_reviewed_at: new Date().toISOString() })
     .eq('id', p.id);
   if(error){ toast('Gagal simpan review: ' + error.message); }
 
   if(newAction){
-    const { data } = await supabase.from('core_next_actions').insert({ project_id: p.id, text: newAction }).select().single();
+    const { data } = await sb.from('core_next_actions').insert({ project_id: p.id, text: newAction }).select().single();
     if(data){
       state.reviewSession[p.id] = state.reviewSession[p.id] || { projectName: p.name, areaName: p.core_areas?.name, actions: [] };
       state.reviewSession[p.id].actions.push(data);
@@ -729,7 +735,7 @@ async function finishReview(allNewActions){
   if(checked.length > 5){ toast('Maksimal 5 prioritas'); return; }
 
   const weekStart = getWeekStart(new Date());
-  const { error } = await supabase.from('core_weekly_reviews').insert({
+  const { error } = await sb.from('core_weekly_reviews').insert({
     week_start_date: weekStart,
     priorities: checked,
     completed_at: new Date().toISOString()
@@ -796,9 +802,9 @@ function closeModal(id){
 
 async function doExport(){
   const includeNotes = document.getElementById('export-include-notes').checked;
-  const { data: areas } = await supabase.from('core_areas').select('*').order('sort_order');
-  const { data: projects } = await supabase.from('core_projects').select('*');
-  const { data: actions } = await supabase.from('core_next_actions').select('*');
+  const { data: areas } = await sb.from('core_areas').select('*').order('sort_order');
+  const { data: projects } = await sb.from('core_projects').select('*');
+  const { data: actions } = await sb.from('core_next_actions').select('*');
 
   const payload = {
     exported_at: new Date().toISOString(),
@@ -861,9 +867,9 @@ async function handleImportFile(e){
   let json;
   try{ json = JSON.parse(text); } catch(err){ toast('File JSON tidak valid'); return; }
 
-  const { data: currentAreas } = await supabase.from('core_areas').select('*');
-  const { data: currentProjects } = await supabase.from('core_projects').select('*');
-  const { data: currentActions } = await supabase.from('core_next_actions').select('*');
+  const { data: currentAreas } = await sb.from('core_areas').select('*');
+  const { data: currentProjects } = await sb.from('core_projects').select('*');
+  const { data: currentActions } = await sb.from('core_next_actions').select('*');
 
   const diff = computeDiff(json, currentAreas||[], currentProjects||[], currentActions||[]);
   pendingImport = { json, diff };
@@ -935,7 +941,7 @@ async function applyImport(){
   for(const area of (json.areas||[])){
     let areaId = area.id;
     if(!areaId){
-      const { data } = await supabase.from('core_areas').insert({ name: area.name }).select().single();
+      const { data } = await sb.from('core_areas').insert({ name: area.name }).select().single();
       areaId = data.id;
     }
     for(const p of (area.projects||[])){
@@ -943,28 +949,28 @@ async function applyImport(){
       let projectId = p.id;
 
       if(act === 'delete' && p.id){
-        await supabase.from('core_projects').delete().eq('id', p.id);
+        await sb.from('core_projects').delete().eq('id', p.id);
         continue;
       }
       if(act === 'create'){
         const insertObj = { area_id: areaId, name: p.name, status: p.status || 'running', divisi: p.divisi, delegasi_owner: p.delegasi_owner, linked_project_url: p.linked_project_url };
         if('private_note' in p) insertObj.private_note = p.private_note;
-        const { data } = await supabase.from('core_projects').insert(insertObj).select().single();
+        const { data } = await sb.from('core_projects').insert(insertObj).select().single();
         projectId = data.id;
       } else if(act === 'update' && p.id){
         const updateObj = { name: p.name, status: p.status, divisi: p.divisi, delegasi_owner: p.delegasi_owner, linked_project_url: p.linked_project_url };
         if('private_note' in p) updateObj.private_note = p.private_note;
-        await supabase.from('core_projects').update(updateObj).eq('id', p.id);
+        await sb.from('core_projects').update(updateObj).eq('id', p.id);
       }
 
       for(const a of (p.next_actions||[])){
         const aAct = a._action || (a.id ? 'update' : 'create');
         if(aAct === 'delete' && a.id){
-          await supabase.from('core_next_actions').delete().eq('id', a.id);
+          await sb.from('core_next_actions').delete().eq('id', a.id);
         } else if(aAct === 'create'){
-          await supabase.from('core_next_actions').insert({ project_id: projectId, text: a.text, is_done: a.is_done || false });
+          await sb.from('core_next_actions').insert({ project_id: projectId, text: a.text, is_done: a.is_done || false });
         } else if(aAct === 'update' && a.id){
-          await supabase.from('core_next_actions').update({ text: a.text, is_done: a.is_done }).eq('id', a.id);
+          await sb.from('core_next_actions').update({ text: a.text, is_done: a.is_done }).eq('id', a.id);
         }
       }
     }
@@ -1002,7 +1008,7 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-initAuth();
+if(sb){ initAuth(); }
 </script>
 </body>
 </html>
