@@ -465,10 +465,11 @@ let gDW = 28;
 
 // ── AUTH ──────────────────────────────────────────────────────────────
 async function signInGoogle() {
+  const currentParams = window.location.search; // preserve ?redirect_to=... kalau ada
   const { error } = await sb.auth.signInWithOAuth({
     provider: 'google',
     options: { 
-  redirectTo: 'https://dhasi.my.id/project',
+  redirectTo: 'https://dhasi.my.id/project' + currentParams,
   queryParams: { access_type: 'offline', prompt: 'consent' }
 }
   });
@@ -574,6 +575,15 @@ function showApp() {
   document.getElementById('app-loading').style.display = 'none';
   document.getElementById('app-login').style.display = 'none';
   document.getElementById('app-main').style.display = 'block';
+
+  // Kalau user datang dari fitur lain (misal /core) yang minta login,
+  // balikin ke sana setelah berhasil login, jangan tampilin dashboard /project.
+  const redirectTo = new URLSearchParams(window.location.search).get('redirect_to');
+  if (redirectTo && redirectTo.startsWith('/')) {
+    window.location.href = redirectTo;
+    return;
+  }
+
   renderDashboard();
   updateHeader('dashboard');
 }
