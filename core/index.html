@@ -451,6 +451,14 @@ function renderArea(){
       <h1>${escapeHtml(d.area.name)}</h1>
     </div>
     <div id="presenting-banner-slot"></div>
+    <div class="presenting-hide" style="margin-bottom:12px;">
+      <button class="btn btn-sm" onclick="showAddProjectForm()" id="btn-add-project">+ Tambah Project</button>
+      <div id="add-project-form" class="hidden" style="display:flex; gap:8px; margin-top:8px;">
+        <input type="text" id="new-project-name" placeholder="Nama project..." style="flex:1; border:1px solid var(--border); border-radius: var(--radius); padding: 8px 10px; font-size:14px; font-family:inherit;" onkeydown="if(event.key==='Enter'){addProject()}">
+        <button class="btn btn-primary btn-sm" onclick="addProject()">Simpan</button>
+        <button class="btn btn-sm" onclick="hideAddProjectForm()">Batal</button>
+      </div>
+    </div>
     <div id="project-list">
       ${d.projects.map(p => renderProjectCard(p)).join('')}
     </div>
@@ -507,6 +515,30 @@ function renderProjectCard(p){
       </div>
     </div>
   `;
+}
+
+function showAddProjectForm(){
+  document.getElementById('btn-add-project').classList.add('hidden');
+  document.getElementById('add-project-form').classList.remove('hidden');
+  document.getElementById('add-project-form').style.display = 'flex';
+  document.getElementById('new-project-name').focus();
+}
+function hideAddProjectForm(){
+  document.getElementById('btn-add-project').classList.remove('hidden');
+  document.getElementById('add-project-form').classList.add('hidden');
+  document.getElementById('new-project-name').value = '';
+}
+async function addProject(){
+  const input = document.getElementById('new-project-name');
+  const name = input.value.trim();
+  if(!name) return;
+  const { data, error } = await sb.from('core_projects')
+    .insert({ area_id: state.currentAreaId, name, status: 'running' })
+    .select().single();
+  if(error){ toast('Gagal tambah project: ' + error.message); return; }
+  state.areaDetail.projects.push({ ...data, next_actions: [], _open: true, _noteOpen: false });
+  hideAddProjectForm();
+  renderArea();
 }
 
 function toggleProject(id){
